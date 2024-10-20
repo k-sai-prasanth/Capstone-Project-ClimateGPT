@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Enterprise-Level Chatbot</title>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-header">
+            <h2>ClimateGPT Assistant</h2>
+        </div>
+        <div id="chat-window" class="chat-window"></div>
+        <div id="input-container">
+            <input id="user-input" type="text" placeholder="Ask a question..." />
+            <button onclick="sendMessage()" id="send-button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M3.4,21.9L22.6,12L3.4,2.1C2.4,1.6,1.5,2.5,1.9,3.4l3.4,6.7l9.6,0L5.3,17.9l-3.4,6.7 C1.5,21.5,2.4,22.4,3.4,21.9z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
