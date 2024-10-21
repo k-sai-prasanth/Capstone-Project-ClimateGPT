@@ -34,7 +34,7 @@ class EmissionDataTool(SingleMessageCustomTool):
             ),
             "emission_type": ToolParamDefinitionParam(
                 param_type="str",
-                description="The type of emission (optional). E.g., 'sfc_emissions', 'n2o_emissions'.",
+                description="The type of emission (optional). E.g., 'sfc_emissions', 'n2o_emissions, green_house_emissions'.",
                 required=False,
             ),
         }

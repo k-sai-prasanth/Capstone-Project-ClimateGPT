@@ -50,7 +50,9 @@ class EmissionQueryHandler:
 # Tool declaration in the form of a JSON block
 def get_tool_declaration():
     return """
-    <tools> {
+    <tools> 
+    
+    {
         "name": "get_emission_data",
         "description": "Get emission values for a given country, year, and emission type.",
         "parameters": {
@@ -72,9 +74,10 @@ def get_tool_declaration():
             "type": "object"
         }
     },
+
     {
         "name": "get_average_emission_data",
-        "description": "Get the average emission value for a country across all years for a specified emission type.",
+        "description": "Get the average emission value for a country across all years for a specified emission type, or the trend for the first/last x years. If terms like ‘decade’ or similar are used, convert them into the corresponding number of years.",
         "parameters": {
             "properties": {
                 "country": {
@@ -82,14 +85,27 @@ def get_tool_declaration():
                     "type": "string"
                 },
                 "emission_type": {
-                    "description": "The type of emission (optional).",
-                    "type": "string"
+                "description": "The type of emission (e.g., 'sfc_emissions', 'n2o_emissions', 'methane_emissions, green_house_emissions, etc').",
+                "type": "string"
+                },
+                "trend_type": {
+                    "description": "Defines whether to get 'average', 'last x years', 'first x years', or 'trend for x years'.",
+                    "type": "string",
+                    "enum": ["average", "last x years", "first x years", "trend for x years"],
+                    "default": "average"
+                },
+                "num_years": {
+                    "description": "The number of years to use for trends (applicable only when using 'last x years', 'first x years', or 'trend for x years').",
+                    "type": "integer",
+                    "default": 5
                 }
             },
             "required": ["country", "emission_type"],
             "type": "object"
         }
-    } </tools>
+    }
+
+    </tools>
     """
 
 # API Endpoint to process user questions
