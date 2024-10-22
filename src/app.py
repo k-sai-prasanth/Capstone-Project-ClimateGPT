@@ -54,23 +54,32 @@ def get_tool_declaration():
     
     {
         "name": "get_emission_data",
-        "description": "Get emission values for a given country, year, and emission type.",
+        "description": "Retrieve emission values for a specified country (or list of countries), year (or list of years), and emission type (or list of emission types). The function will return a JSON object with the requested information. If multiple countries, emission types, or specific years are queried, the function will provide the corresponding outputs for each. If the requested emission type does not exist, the function will return all emission types for the given country and year and suggest likely emission types. When parsing the parameters, if terms like 'sfc', 'methane', 'pfc', 'nf3', 'n2o', 'HFC PFC', or 'greenhouse' are mentioned, convert them to their respective emission types: 'sfc_emissions', 'methane_emissions', 'pfc_emissions', 'nf3_emissions', 'n2o_emissions', 'HFC_PFC_emissions', or 'green_house_emissions'. If the term is mentioned with or without the 'emissions' keyword, ensure it's mapped correctly for function calling. This tool accepts multiple countries, years, and emission types as lists. ",
         "parameters": {
             "properties": {
                 "country": {
-                    "description": "The name of the country or area.",
-                    "type": "string"
+                    "description": "The name of the country or a list of countries.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "year": {
-                    "description": "The year of the emission data.",
-                    "type": "integer"
+                    "description": "The year or a list of years for which the emission data is requested.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "emission_type": {
-                    "description": "The type of emission (optional).",
-                    "type": "string"
+                    "description": "The emission type or a list of emission types. If the requested type doesn't exist, all emission types will be returned.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             },
-            "required": ["country", "year"],
+            "required": ["country"],
             "type": "object"
         }
     },
@@ -124,8 +133,8 @@ async def ask_question(user_question: UserQuestion):
                 "role": "system",
                 "content": (
                     f"You are a function-calling AI model. You have access to the following tools: {tool_declaration}. "
-                    "For each function call, return a JSON object with the function name and the arguments required. "
-                    "Consider the meaning and context of different user queries, even if phrased differently, and map them to the appropriate tool."
+                    "For each function call, return a JSON object with the function name and the required arguments. The arguments can include multiple values, such as lists for a single field (e.g., multiple years or countries), based on the context of the question asked." 
+                    "Please consider the meaning and context of different user queries, even if they are phrased differently, and map them to the appropriate tool accordingly."
                 )
             },
             {"role": "user", "content": question},
@@ -135,7 +144,7 @@ async def ask_question(user_question: UserQuestion):
 
     llama_response = chat_completion.choices[0].message.content
     function_and_parameters = extract_function_and_parameters(llama_response)
-
+    print(function_and_parameters)
     if function_and_parameters:
         # Extract function name and parameters
         function_name = function_and_parameters.get("function_name")
@@ -152,7 +161,7 @@ async def ask_question(user_question: UserQuestion):
             # Use LLaMA model to generate a descriptive response based on the user query and emission data
             detailed_response_prompt = (
                 f"The user asked: '{question}'. The emission data retrieved is: '{emission_data}'. "
-                f"Please generate a descriptive response that clearly explains the result to the user."
+                f"Please analyze the question and the retrieved emission data. Based on the question, perform any necessary data analysis, or handle specific requests. Use the provided emission data to generate insights, perform calculations if required, and deliver an accurate response. Return the output in a clear and descriptive manner, ensuring that the answer directly addresses the question asked"
             )
 
             response_generation = groq_client.chat.completions.create(

@@ -18,7 +18,7 @@ class EmissionDataTool_Average(SingleMessageCustomTool):
     """
 
     def get_name(self) -> str:
-        return "get_average_emission_data_or_trend"
+        return "get_average_emission_data"
 
     def get_description(self) -> str:
         return "Get the average emission value or trend for a country across all years for a specified emission type."
