@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import asyncio
 import json
+import requests
 import os
 from groq import Groq
 from emissions_data import EmissionDataTool  # Specific year data
@@ -11,6 +12,7 @@ from emission_data_average import EmissionDataTool_Average  # Average data
 
 # Initialize the FastAPI app
 app = FastAPI()
+OPENWEATHER_API_KEY = '58be21383da9a93bdc2f76ed9d984acd'
 
 # Mount static files for frontend
 static_path = os.path.join(os.path.dirname(__file__), 'static')
@@ -193,3 +195,97 @@ def extract_function_and_parameters(response: str):
         }
     except Exception as e:
         return None
+
+class WeatherQueryHandler:
+    def __init__(self):
+        self.api_key = OPENWEATHER_API_KEY
+        self.base_url = 'http://api.openweathermap.org/data/2.5/weather'
+
+    def fetch_weather_data(self, city: str):
+        """Fetch current weather data for a given city."""
+        params = {
+            'q': city,
+            'appid': self.api_key,
+            'units': 'metric'
+        }
+        response = requests.get(self.base_url, params=params)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return {"error": f"Could not retrieve weather data for {city}"}
+
+class UserQuestion(BaseModel):
+    question: str
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the ClimateGPT API. Use the '/ask_weather' endpoint to query weather information."}
+
+def extract_city_from_question(question: str):
+    """A simple function to extract city name from the question."""
+    if "in" in question:
+        return question.split("in")[-1].strip().split()[0]
+    return None
+
+def simulated_model_response(question):
+    if "weather" in question.lower():
+        return """
+        <tool_call>{
+            "name": "get_weather_data",
+            "arguments": {
+                "city": "Paris"
+            }
+        }</tool_call>
+        """
+    return """
+    <tool_call>{
+        "name": "unknown_function",
+        "arguments": {}
+    }</tool_call>
+    """
+
+def extract_function_and_parameters(response: str):
+    try:
+        tool_call_start = response.find("<tool_call>")
+        tool_call_end = response.find("</tool_call>")
+        
+        if tool_call_start == -1 or tool_call_end == -1:
+            return None
+
+        tool_call_json = response[tool_call_start + len("<tool_call>"):tool_call_end]
+        tool_call_data = json.loads(tool_call_json)
+
+        return {
+            "function_name": tool_call_data.get("name"),
+            "arguments": tool_call_data.get("arguments"),
+        }
+    except Exception as e:
+        return None
+
+@app.post("/ask_weather")
+def ask_weather_question(user_question: UserQuestion):
+    question = user_question.question
+    llama_response = simulated_model_response(question)
+    function_and_parameters = extract_function_and_parameters(llama_response)
+    
+    if function_and_parameters:
+        function_name = function_and_parameters.get("function_name")
+        parameters = function_and_parameters.get("arguments")
+        city = parameters.get("city")
+
+        if function_name == "get_weather_data" and city:
+            weather_handler = WeatherQueryHandler()
+            weather_data = weather_handler.fetch_weather_data(city=city)
+
+            if "error" not in weather_data:
+                return JSONResponse(content={
+                    "response": f"The weather in {city} is {weather_data['weather'][0]['description']}. "
+                                f"The temperature is {weather_data['main']['temp']}°C, "
+                                f"with a humidity of {weather_data['main']['humidity']}%."
+                })
+            else:
+                return JSONResponse(content={"response": weather_data["error"]})
+
+    return JSONResponse(content={"response": "Could not extract the function name or parameters."})
+
