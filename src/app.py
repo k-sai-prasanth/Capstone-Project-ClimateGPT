@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import json
-import requests
 import os
 from groq import Groq
 from emissions_data import EmissionDataTool  # Specific year data
