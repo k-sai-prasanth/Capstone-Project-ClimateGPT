@@ -3,20 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <title>Enterprise-Level Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <title>Climate GPT Assistant</title>
+    <style>
+        body {
+            background-image: url('../static/climategpt_background.jpg'); /* Replace with your image name */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Calibri', sans-serif;
+            overflow: hidden;
+        }
+        #welcome-screen {
+            position: absolute;
+            top: 6%; /* Keep the heading higher up */
+            text-align: center;
+            width: 100%;
+        }
+        #welcome-screen h1 {
+            font-weight: bold;
+            font-size: 64px;
+            color: #6e6e59;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        #title-after-transition {
+            font-weight: bold;
+            font-size: 64px; /* Title font size */
+            text-align: center;
+            color: #6e6e59;
+            margin-top: 15px;
+        }
+        #input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center the input container */
+            background: #fff;
+            border-radius: 25px;
+            padding: 10px;
+            padding-left: 20px;
+            margin-top: 50px;
+            margin-top: 250px;
+            margin-left: 450px;
+            width: 50%;
+            max-width: 50vw;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Add a subtle shadow */
+        }
+        #chat-input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border-radius: 25px;
+            padding: 10px;
+            position: fixed;
+            bottom: 3%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            max-width: 40vw;
+            box-sizing: border-box;
+        }
+        #user-input, #chat-user-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            padding: 5px;
+            border-radius: 25px;
+            color: #000;
+            background-color: transparent;
+        }
+        #user-input::placeholder, #chat-user-input::placeholder {
+            color: #888;
+        }
+        #send-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #000;
+        }
+        #send-button svg {
+            fill: #0ac335;
+        }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 20px;
+            box-sizing: border-box;
+            display: inline-block;
+            word-wrap: break-word;
+        }
+        .user-bubble {
+            background: #e0f7fa;
+            color: #000;
+            text-align: justify;
+        }
+        .bot-bubble {
+            background: #f1f8e9;
+            color: #000;
+            text-align: left;
+        }
+        #chat-window {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 75vh;
+            overflow-y: scroll;
+            width: 60%;  /* Ensure same width as input container */
+            max-width: 60vw;  /* Same max width as input container */
+            margin: 0 auto;
+            padding-right: 15px;
+            margin-bottom: 70px;
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
+        }
+        #chat-window::-webkit-scrollbar {
+            display: none; /* Hide scrollbar for Chrome, Safari, and Edge */
+        }
+        #typing-indicator {
+            font-style: italic;
+            color: #fff;
+            margin: 5px;
+        }
+        .chat-bubble-wrapper {
+            width: 100%;
+            display: block;
+        }
+        .chat-bubble-wrapper.user {
+            text-align: right;
+        }
+        .chat-bubble-wrapper.bot {
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
-    <div id="chat-container">
-        <div id="chat-header">
-            <h2>ClimateGPT Assistant</h2>
-        </div>
-        <div id="chat-window" class="chat-window"></div>
+    <div id="welcome-screen" class="screen">
+        <h1>TwistersGPT</h1>
         <div id="input-container">
-            <input id="user-input" type="text" placeholder="Ask a question..." />
+            <input id="user-input" type="text" placeholder="Ask your question..." />
+            <button onclick="startChat()" id="send-button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M3.4,21.9L22.6,12L3.4,2.1C2.4,1.6,1.5,2.5,1.9,3.4l3.4,6.7l9.6,0L5.3,17.9l-3.4,6.7 C1.5,21.5,2.4,22.4,3.4,21.9z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="chat-container" class="screen hidden">
+        <div id="title-after-transition">TwistersGPT</div> <!-- Title at the top after transition -->
+        <div id="chat-window" class="chat-window"></div>
+        <div id="typing-indicator" class="typing-indicator" style="display: none;">TwistersGPT is typing...</div>
+        <div id="chat-input-container">
+            <input id="chat-user-input" type="text" placeholder="Ask your question..." />
             <button onclick="sendMessage()" id="send-button">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
                     <path fill="currentColor" d="M3.4,21.9L22.6,12L3.4,2.1C2.4,1.6,1.5,2.5,1.9,3.4l3.4,6.7l9.6,0L5.3,17.9l-3.4,6.7 C1.5,21.5,2.4,22.4,3.4,21.9z"/>
@@ -24,6 +173,96 @@
             </button>
         </div>
     </div>
-    <script src="/static/app.js"></script>
+
+    <script>
+        function startChat() {
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const chatContainer = document.getElementById('chat-container');
+            const userInput = document.getElementById('user-input').value.trim();
+
+            if (userInput) {
+                // Hide the welcome screen and show the chat container
+                welcomeScreen.classList.add('hidden');
+                chatContainer.classList.remove('hidden');
+
+                // Add the user's initial question to the chat window (only once)
+                const initialUserBubbleWrapper = document.createElement('div');
+                initialUserBubbleWrapper.className = 'chat-bubble-wrapper user';
+
+                const initialUserBubble = document.createElement('div');
+                initialUserBubble.className = 'chat-bubble user-bubble';
+                initialUserBubble.textContent = userInput;
+
+                initialUserBubbleWrapper.appendChild(initialUserBubble);
+                document.getElementById('chat-window').appendChild(initialUserBubbleWrapper);
+
+                // Automatically scroll to the bottom of the chat
+                document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+
+                // Now call sendMessage with the user input
+                sendMessage(userInput);
+            }
+        }
+
+        async function sendMessage(question) {
+            if (!question) {
+                const input = document.getElementById('chat-user-input');
+                question = input.value.trim();
+                if (!question) return;
+                input.value = '';
+
+                // Only append user message for subsequent inputs (not the first one)
+                const userBubbleWrapper = document.createElement('div');
+                userBubbleWrapper.className = 'chat-bubble-wrapper user';
+
+                const userBubble = document.createElement('div');
+                userBubble.className = 'chat-bubble user-bubble';
+                userBubble.textContent = question;
+
+                userBubbleWrapper.appendChild(userBubble);
+                document.getElementById('chat-window').appendChild(userBubbleWrapper);
+            }
+
+            document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+
+            const typingIndicator = document.getElementById('typing-indicator');
+            typingIndicator.style.display = 'block';
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await response.json();
+                typingIndicator.style.display = 'none';
+
+                const botBubbleWrapper = document.createElement('div');
+                botBubbleWrapper.className = 'chat-bubble-wrapper bot';
+
+                const botBubble = document.createElement('div');
+                botBubble.className = 'chat-bubble bot-bubble';
+                botBubble.textContent = data.response;
+
+                botBubbleWrapper.appendChild(botBubble);
+                document.getElementById('chat-window').appendChild(botBubbleWrapper);
+                document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+            } catch (error) {
+                typingIndicator.style.display = 'none';
+                const errorBubbleWrapper = document.createElement('div');
+                errorBubbleWrapper.className = 'chat-bubble-wrapper bot';
+
+                const errorBubble = document.createElement('div');
+                errorBubble.className = 'chat-bubble bot-bubble';
+                errorBubble.textContent = "Something went wrong. Please try again.";
+
+                errorBubbleWrapper.appendChild(errorBubble);
+                document.getElementById('chat-window').appendChild(errorBubbleWrapper);
+                document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+            }
+        }
+
+    </script>
 </body>
 </html>
