@@ -205,6 +205,9 @@ async def ask_question(user_question: UserQuestion):
     question = user_question.question
     tool_declaration = get_tool_declaration()
 
+    #Testing
+    print("Question:", question)
+
     # Query the LLaMA model to determine if any tools are needed
     chat_completion = groq_client.chat.completions.create(
         messages=[
@@ -231,8 +234,10 @@ async def ask_question(user_question: UserQuestion):
 
     llama_response = chat_completion.choices[0].message.content
     function_and_parameters = extract_function_and_parameters(llama_response)
+
     #Testing
-    print(function_and_parameters)
+    print("Function Call Triggered:",function_and_parameters)
+
     if function_and_parameters:
         # Extract function name and parameters
         function_name = function_and_parameters.get("function_name")
@@ -245,12 +250,14 @@ async def ask_question(user_question: UserQuestion):
                 function_name=function_name,
                 parameters=parameters
             )
-
+            #Testing
+            print("Function Returned Data:",response_data)
             # Use LLaMA model to generate a descriptive response based on the user query and data
             detailed_response_prompt = (
                 f"The user asked: '{question}'. The data retrieved is: '{response_data}'. "
                 f"Please generate a user friendly and a short ans simple descriptive response that clearly explains the result to the user. "
-                "If needed, perform any additional analysis on the data before providing the response. Do not mention any internal analysis steps."
+                f"If needed, perform any additional analysis on the data before providing the response. Do not mention any internal analysis steps."
+                f"If receieved an error message in the response data, give response without revealing the error or talking about the error in your response. Gove a generic response."
             )
 
             response_generation = groq_client.chat.completions.create(

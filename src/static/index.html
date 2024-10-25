@@ -262,7 +262,22 @@
                 document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
             }
         }
+        document.addEventListener('keydown', function(event) {
+            const userInput = document.getElementById('user-input');
+            const chatUserInput = document.getElementById('chat-user-input');
 
+            // Check if Enter is pressed
+            if (event.key === 'Enter') {
+                // If the welcome screen input is active
+                if (document.activeElement === userInput && userInput.value.trim() !== '') {
+                    startChat();
+                }
+                // If the chat screen input is active
+                else if (document.activeElement === chatUserInput && chatUserInput.value.trim() !== '') {
+                    sendMessage();
+                }
+            }
+        });
     </script>
 </body>
 </html>
