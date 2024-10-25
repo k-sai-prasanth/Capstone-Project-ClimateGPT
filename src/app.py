@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -200,39 +200,87 @@ def get_tool_declaration():
 class UserQuestion(BaseModel):
     question: str
 
+# Dictionary to store session memory
+memory_store = {}
+
+# Function to update memory for a session
+def update_memory(session_id, user_input, model_response):
+    if session_id not in memory_store:
+        memory_store[session_id] = []
+    memory_store[session_id].append({"user": user_input, "model": model_response})
+
+# Function to retrieve memory for a session
+def get_memory(session_id):
+    return memory_store.get(session_id, [])
+
 @app.post("/ask")
 async def ask_question(user_question: UserQuestion):
+    session_id = 1
     question = user_question.question
     tool_declaration = get_tool_declaration()
 
     #Testing
-    print("Question:", question)
+    print("Original Question:", question)
 
-    # Query the LLaMA model to determine if any tools are needed
-    chat_completion = groq_client.chat.completions.create(
+    # Step 1: Pre-process the question to handle human language phrases
+    clarification_prompt = (
+        f"The user asked: '{question}'. "
+        "If the user's question contains informal or ambiguous phrases like 'kangaroo country', "
+        "translate them into a formal or precise name. Return the clarified input."
+    )
+
+    clarification_response = groq_client.chat.completions.create(
         messages=[
-            {
-                "role": "system",
-                "content": (
-                    f"You are a top-notch climate assistant. You should be able to handle user queries and respond accordingly. "
-                    f"You have access to the following tools: {tool_declaration} "
-                    f"Use these tools to answer the user queries when appropriate. "
-                    f"For each user query you can answer using the tools, return a JSON object with the function name and the arguments required, enclosed within <tool_call> and </tool_call> tags. "
-                    f"If the user's question does not relate to any of the tools, or if you cannot identify a tool to use, respond to the user directly and engagingly like an assistant would. "
-                    f"Consider the meaning and context of different user queries, even if phrased differently or with any spelling mistakes, and map them to the appropriate tool when possible."
-                    f"You are a top-notch climate assistant. You should be able to handle user queries and respond accordingly. "
-                    f"Understand and decode differnet types of shortforms, normal idioms, phrases, abbreviations etc. For example, ind stands for india"
-                    f"If the user question is in high level language, translate it to the normal language, understand it and then decide on the tool and Json object."
-                    f"For example, if the user asks 'Give me the surface temperature change for India from 1970 in a 5-year shift', you should return: "
-                    f"name: get_surface_temperature_change, arguments: {{'command': 'temperature_change_for_country', 'country': 'India', 'start_year': 1970, 'interval': 5}} ."
-                )
-            },
+            {"role": "system", "content": clarification_prompt},
             {"role": "user", "content": question},
         ],
         model=llama_70B_tool_use,
     )
 
-    llama_response = chat_completion.choices[0].message.content
+    # Get the clarified input from the model
+    clarified_question = clarification_response.choices[0].message.content.strip()
+
+    #Testing
+    print("Clarified Question:", clarified_question)
+
+    # Check if clarification failed and ask for more details if necessary
+    if "I don't understand" in clarified_question or clarified_question == question:
+        return JSONResponse(content={"response": "I'm not sure I understood your question. Could you clarify or provide more detail?"})
+
+    # Step 2: Get memory for this session (optional if you want memory)
+    memory = get_memory(session_id)
+
+    # Format memory for LLaMA
+    memory_context = "\n".join([f"User: {entry['user']}\nModel: {entry['model']}" for entry in memory])
+
+    # Step 3: Query the LLaMA model with clarified input
+    decision_prompt = (
+        f"Memory:\n{memory_context}\n\n"
+        f"The user asked: '{clarified_question}'. "
+        f"You are a top-notch climate assistant. You should be able to handle user queries and respond accordingly. "
+        f"You have access to the following tools: {tool_declaration}. "
+        f"Use these tools to answer the user queries when appropriate. "
+        f"If the user's question is casual or conversational and dont need any tools, generate a friendly, natural response. "
+        f"For each user query you can answer using the tools, understand the question carefully and return a JSON object with the function name and the arguments required, enclosed within <tool_call> and </tool_call> tags. "
+        f"If the user's question does not relate to any of the tools, or if you cannot identify a tool to use, respond to the user directly and engagingly like an assistant would. "
+        f"Consider the meaning and context of different user queries, even if phrased differently or with any spelling mistakes, and map them to the appropriate tool when possible."
+        f"Understand and decode differnet types of shortforms, normal idioms, phrases, abbreviations etc. For example, ind stands for india"
+        f"If the user question is in high level language, translate it to the normal language, convert any phrases,short forms or abbreviations and understand it and then decide on the tool and Json object."
+        f"For example, if the user asks 'Give me the surface temperature change for India from 1970 in a 5-year shift', you should return: "
+        f"name: get_surface_temperature_change, arguments: {{'command': 'temperature_change_for_country', 'country': 'India', 'start_year': 1970, 'interval': 5}} ."
+    )
+
+    # LLaMA response to decide between tool invocation and casual conversation
+    decision_response = groq_client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": decision_prompt},
+            {"role": "user", "content": clarified_question},
+        ],
+        model=llama_70B_tool_use,
+    )
+
+    llama_response = decision_response.choices[0].message.content
+
     function_and_parameters = extract_function_and_parameters(llama_response)
 
     #Testing
@@ -268,6 +316,8 @@ async def ask_question(user_question: UserQuestion):
             )
 
             descriptive_response = response_generation.choices[0].message.content
+            # Update memory after the response (if using memory)
+            update_memory(session_id, question, descriptive_response)
             return JSONResponse(content={"response": descriptive_response})
 
     # If no function name and parameters were extracted, have the LLM generate a response directly
@@ -286,8 +336,10 @@ async def ask_question(user_question: UserQuestion):
             model=llama_70B_tool_use,
         )
 
-        llama_response = chat_completion.choices[0].message.content
-        return JSONResponse(content={"response": llama_response})
+        llama_response_general = chat_completion.choices[0].message.content
+        # Update memory after the conversational response
+        update_memory(session_id, question, llama_response_general)
+        return JSONResponse(content={"response": llama_response_general})
 
 # Function to parse the LLaMA model response and extract the function and parameters
 def extract_function_and_parameters(response: str):
