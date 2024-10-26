@@ -34,17 +34,18 @@ llama_70B_tool_use = 'llama3-groq-70b-8192-tool-use-preview'
 # User Query Handling Class
 class UserQueryHandler:
     def __init__(self):
-        self.tool_specific = EmissionDataTool()
-        self.tool_average = EmissionDataTool_Average()
+        self.tool_specific_emission = EmissionDataTool()
+        self.tool_average_emission = EmissionDataTool_Average()
         self.tool_earth_surface_temperature_change = SurfaceTemperatureChangeTool()
+        #Declare any new tools here
 
     # Function to handle queries
     async def fetch_response_userquery(self, function_name: str, parameters: dict):
         # Dynamically call the respective tool based on the function name
         if function_name == "get_emission_data":
-            return await self.tool_specific.run_impl(**parameters)
+            return await self.tool_specific_emission.run_impl(**parameters)
         elif function_name == "get_average_emission_data":
-            return await self.tool_average.run_impl(**parameters)
+            return await self.tool_average_emission.run_impl(**parameters)
         elif function_name == "get_surface_temperature_change":
             return await self.tool_earth_surface_temperature_change.run_impl(**parameters)
         else:
@@ -102,7 +103,6 @@ def get_tool_declaration():
             "type": "object"
         }
     },
-
     {
         "name": "get_average_emission_data",
         "description": "Get the average emission value for a country across all years for a specified emission type, or the trend for the first/last x years. If terms like ‘decade’ or similar are used, convert them into the corresponding number of years.",
@@ -144,7 +144,7 @@ def get_tool_declaration():
             "required": ["country", "emission_type"],
             "type": "object"
         }
-    }
+    },
     {
         "name": "get_surface_temperature_change",
         "description": "This tool allows the user to query earth's surface temperature change data for one or more countries for a particular year or range of years or for decades," 
@@ -193,7 +193,9 @@ def get_tool_declaration():
                 },
             }
         }
-    } </tools>
+    },
+    }
+    </tools>
     """
 
 # API Endpoint to process user questions
