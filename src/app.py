@@ -5,10 +5,10 @@ from pydantic import BaseModel
 import json
 import os
 from groq import Groq
-from emissions_data import EmissionDataTool  # Specific year data
-from emission_data_average import EmissionDataTool_Average  # Average data
-from surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
-from carbon_monitor import CarbonEmissionDataTool # Carbon Emissions Data
+from custom_tools.emissions_data import EmissionDataTool  # Specific year data
+from custom_tools.emission_data_average import EmissionDataTool_Average  # Average data
+from custom_tools.surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
+from custom_tools.carbon_monitor import CarbonEmissionDataTool # Carbon Emissions Data
 
 # Initialize the FastAPI app
 app = FastAPI()
