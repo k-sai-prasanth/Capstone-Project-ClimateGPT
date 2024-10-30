@@ -8,6 +8,9 @@ from groq import Groq
 from emissions_data import EmissionDataTool  # Specific year data
 from emission_data_average import EmissionDataTool_Average  # Average data
 from surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
+from sector_emission import SectorEmissionTool
+from rating_country import RatingCountryTool
+from energy_emissions import EnergyEmissionTool
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -37,6 +40,9 @@ class UserQueryHandler:
         self.tool_specific = EmissionDataTool()
         self.tool_average = EmissionDataTool_Average()
         self.tool_earth_surface_temperature_change = SurfaceTemperatureChangeTool()
+        self.tool_sector_emissions = SectorEmissionTool()
+        self.tool_rating_country = RatingCountryTool()
+        self.tool_energy_emissions = EnergyEmissionTool()
 
     # Function to handle queries
     async def fetch_response_userquery(self, function_name: str, parameters: dict):
@@ -47,6 +53,12 @@ class UserQueryHandler:
             return await self.tool_average.run_impl(**parameters)
         elif function_name == "get_surface_temperature_change":
             return await self.tool_earth_surface_temperature_change.run_impl(**parameters)
+        elif function_name == "get_sector_emission_data":
+            return await self.tool_sector_emissions.run_impl(**parameters)
+        elif function_name == 'get_country_rating':
+            return await self.tool_rating_country.run_impl(**parameters)
+        elif function_name == 'get_energy_emission_data':
+            return await self.tool_energy_emissions.run_impl(**parameters)
         else:
             return {"status": "error", "data": ["Unknown function requested by the model."]}
 
@@ -144,7 +156,7 @@ def get_tool_declaration():
             "required": ["country", "emission_type"],
             "type": "object"
         }
-    }
+    },
     {
         "name": "get_surface_temperature_change",
         "description": "This tool allows the user to query earth's surface temperature change data for one or more countries for a particular year or range of years or for decades," 
@@ -193,7 +205,96 @@ def get_tool_declaration():
                 },
             }
         }
-    } </tools>
+    },
+    {
+        "name": "get_sector_emission_data",
+        "description": "Trigger this function if Buildings, Industry, Electricity, Transport, Transport Road is specified in input. Get the sector(Buildings, Industry, Electricity, Transport, Transport Road) specific emission data for a country. sector can be Buildings, Industry, Electricity, Transport, Transport Road. If any of the following is specified Buildings, Industry, Electricity, Transport, Transport Road, call this function. This function will return the emission value for specific sector and country for a year.",
+        "parameters": {
+            "properties": {
+                "Country": {
+                    "description": "The name of the country or a list of countries.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                    "description": "The name of the country or a list of countries.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "Sector": {
+                    "description": "The sector or a list of sectors or 'all' to include all sectors. Sectors can be Buildings, Industry, Electricity, Transport, Transport Road",
+                    "type": "string"
+                    "enum": ["buildings", "industry", "electricity", "transport", "transport road"]
+                },
+                "Year": {
+                    "description": "A year or a list of years.",
+                    "type": "string"
+                },
+                "Description": {
+                    "description": "Description explaining if any specific type is required such as 'Buildings emissions intensity (per floor area, commercial)', 'Buildings emissions intensity (per floor area, residential)', 'Buildings energy intensity (commercial)', 'Buildings energy intensity (residential)', 'Emissions intensity of electricity generation', 'Share of coal in electricity generation', 'Cement emissions intensity (per product)', 'Steel emissions intensity (per product)', 'Zero emission fuels for domestic transport', 'EV market share','EV stock shares','EVs per capita','Road transport emissions intensity', 'Steel emissions intensity (per product)' or similar to the list in meaning. Use the terms in the list to pass to the function",
+                    "type": "string"
+                
+                }
+            },
+            "required": ["Country"],
+            "type": "object"
+        }
+    },
+    {
+        "name": "get_country_rating",
+        "description": "Retrieve country rating for a specific country based on the requested component. The components can include Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, and Net zero target. Explanations for each component are provided within the function.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "Country": {
+                    "description": "The name of the country or a list of countries.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "Component": {
+                    "description": "The component to retrieve. Options include: Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, Net zero target. If not specified, all ratings will be returned by default.",
+                    "type": "string"
+                }
+            },
+            "required": ["Country"]
+        }
+    },
+    {
+        "name": "get_energy_emission_data",
+        "description": "Retrieve energy emission values for a specified country (or list of countries). If year and series are specified, return specific information. Series values might include ['Primary energy production (petajoules)', 'Net imports [Imports - Exports - Bunkers] (petajoules)', 'Total supply (petajoules)', 'Supply per capita (gigajoules)', 'Changes in stocks (petajoules)']",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "Country": {
+                    "description": "The name of the country or a list of countries.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "Year": {
+                    "description": "The year or a list of years for which the emission data is requested.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "Series": {
+                    "description": "The Series can include any information from 'Primary energy production (petajoules)', 'Net imports [Imports - Exports - Bunkers] (petajoules)', 'Total supply (petajoules)', 'Supply per capita (gigajoules)', 'Changes in stocks (petajoules)' or similar categories.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["Country"]
+        }
+    }    
+    </tools>
     """
 
 # API Endpoint to process user questions
@@ -266,8 +367,17 @@ async def ask_question(user_question: UserQuestion):
         f"Consider the meaning and context of different user queries, even if phrased differently or with any spelling mistakes, and map them to the appropriate tool when possible."
         f"Understand and decode differnet types of shortforms, normal idioms, phrases, abbreviations etc. For example, ind stands for india"
         f"If the user question is in high level language, translate it to the normal language, convert any phrases,short forms or abbreviations and understand it and then decide on the tool and Json object."
+        f"Make sure to triger function call get_sector_emission_data if any of the sectors are specified along with emissions -> buildings, industry, electricity, transport, transport road"
+        f"Make sure to triger function call get_country_rating if anything pertaining to rating is asked. It can be Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, Net zero target rating"
+        f"Make sure to triger function call get_energy_emission_data if anything pertaining to energy is asked for a country. Get the parameters such as country, year and series type only if it is asked."
         f"For example, if the user asks 'Give me the surface temperature change for India from 1970 in a 5-year shift', you should return: "
         f"name: get_surface_temperature_change, arguments: {{'command': 'temperature_change_for_country', 'country': 'India', 'start_year': 1970, 'interval': 5}} ."
+        f"Another example, if the user asks 'Give me the Buildings emission value for Australia' , you should return: "
+        f"name: get_sector_emission_data, arguments: {{'Country': 'Australia', 'Sector': 'Buildings'}} ."
+        f"Another example, if the user asks 'Give me the Transport emission value for Australia in 2020 , you should return: "
+        f"name: get_sector_emission_data, arguments: {{'Country': 'Australia', 'Sector': 'Transport', 'Year': 2020}} ."
+        f"Example, If the user asks 'Give me the energy emissions of Australia', you should return: "
+        f"name: get_energy_emission_data, arguments: {{'Country': 'Australia'}} ."
     )
 
     # LLaMA response to decide between tool invocation and casual conversation
