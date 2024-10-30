@@ -5,16 +5,16 @@ from pydantic import BaseModel
 import json
 import os
 from groq import Groq
-from emissions_data import EmissionDataTool  # Specific year data
-from emission_data_average import EmissionDataTool_Average  # Average data
-from surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
+from custom_tools.emissions_data import EmissionDataTool  # Specific year data
+from custom_tools.emission_data_average import EmissionDataTool_Average  # Average data
+from custom_tools.surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
+from custom_tools.carbon_monitor import CarbonEmissionDataTool # Carbon Emissions Data
 from sector_emission import SectorEmissionTool
 from rating_country import RatingCountryTool
 from energy_emissions import EnergyEmissionTool
 
 # Initialize the FastAPI app
 app = FastAPI()
-OPENWEATHER_API_KEY = '58be21383da9a93bdc2f76ed9d984acd'
 
 # Mount static files for frontend
 static_path = os.path.join(os.path.dirname(__file__), 'static')
@@ -37,20 +37,22 @@ llama_70B_tool_use = 'llama3-groq-70b-8192-tool-use-preview'
 # User Query Handling Class
 class UserQueryHandler:
     def __init__(self):
-        self.tool_specific = EmissionDataTool()
-        self.tool_average = EmissionDataTool_Average()
+        self.tool_specific_emission = EmissionDataTool()
+        self.tool_average_emission = EmissionDataTool_Average()
         self.tool_earth_surface_temperature_change = SurfaceTemperatureChangeTool()
         self.tool_sector_emissions = SectorEmissionTool()
         self.tool_rating_country = RatingCountryTool()
         self.tool_energy_emissions = EnergyEmissionTool()
+        self.tool_carbon_emissions = CarbonEmissionDataTool()
+        #Declare any new tools above this line
 
     # Function to handle queries
     async def fetch_response_userquery(self, function_name: str, parameters: dict):
         # Dynamically call the respective tool based on the function name
         if function_name == "get_emission_data":
-            return await self.tool_specific.run_impl(**parameters)
+            return await self.tool_specific_emission.run_impl(**parameters)
         elif function_name == "get_average_emission_data":
-            return await self.tool_average.run_impl(**parameters)
+            return await self.tool_average_emission.run_impl(**parameters)
         elif function_name == "get_surface_temperature_change":
             return await self.tool_earth_surface_temperature_change.run_impl(**parameters)
         elif function_name == "get_sector_emission_data":
@@ -59,6 +61,9 @@ class UserQueryHandler:
             return await self.tool_rating_country.run_impl(**parameters)
         elif function_name == 'get_energy_emission_data':
             return await self.tool_energy_emissions.run_impl(**parameters)
+        elif function_name == "get_carbon_emission_data":
+            return await self.tool_carbon_emissions.run_impl(**parameters)
+        #Declare any new Tools above this line
         else:
             return {"status": "error", "data": ["Unknown function requested by the model."]}
 
@@ -108,13 +113,9 @@ def get_tool_declaration():
                         "type": "string"
                     }
                 }
-            },
-            "required": ["country"],
-            "required": ["country"],
-            "type": "object"
+            }
         }
     },
-
     {
         "name": "get_average_emission_data",
         "description": "Get the average emission value for a country across all years for a specified emission type, or the trend for the first/last x years. If terms like ‘decade’ or similar are used, convert them into the corresponding number of years.",
@@ -125,8 +126,8 @@ def get_tool_declaration():
                     "type": "string"
                 },
                 "emission_type": {
-                "description": "The type of emission (e.g., 'sfc_emissions', 'n2o_emissions', 'methane_emissions, green_house_emissions, etc').",
-                "type": "string"
+                    "description": "The type of emission (e.g., 'sfc_emissions', 'n2o_emissions', 'methane_emissions, green_house_emissions, etc').",
+                    "type": "string"
                 },
                 "trend_type": {
                     "description": "Defines whether to get 'average', 'last x years', 'first x years', or 'trend for x years'.",
@@ -152,9 +153,7 @@ def get_tool_declaration():
                     "type": "integer",
                     "default": 5
                 }
-            },
-            "required": ["country", "emission_type"],
-            "type": "object"
+            }
         }
     },
     {
@@ -167,7 +166,7 @@ def get_tool_declaration():
             "properties": {
                 "command": {
                     "description": "It has list of commands to chose based on the question type.The available commands are temperature_change_for_country, temperature_change_between_years, compare_temperature_change," 
-                                    "top_n_temperature_change, threshold_exceeded.For example if question is regarding the surface temperature change for a particular country, then command = temperature_change_for_country."
+                                    "top_n_temperature_change, threshold_exceeded.For example if question is regarding the surface temperature change for a particular country, then command = temperature_change_for_country.",
                     "type": "string"
                 },
                 "country": {
@@ -205,6 +204,46 @@ def get_tool_declaration():
                 },
             }
         }
+    },
+    {
+        "name": "get_carbon_emission_data",
+        "description": "This tools helps to query CO2 emissions also known as carbon emissions data by specifying countries, sectors, years, and/or dates. "
+                        "If any of the requested parameters are not available, it provides relevant messages."
+                        "It has information for every day from January to July for the years 2023 and 2024."
+                        "If the data or year requested is not in this range, provide the value for the closest date to the requested data."
+                        "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World and WORLD."
+                        "It has the data for the following sectors, Domestic Aviation, Ground Transport, Industry, Residential, Power and ,International Aviation."
+        "parameters": {
+            "properties": {
+                "countries": {
+                    "description": "The country or list of countries for which to fetch the co2 or carbon emissions data. "
+                                    "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World and WORLD."
+                                    "For example, 'India' or 'India, Brazil'. If not provided, data for all countries will be aggregated.",
+                    "type": "List[str]"
+                },
+                "sectors": {
+                    "description": "The sector or list of sectors for which to fetch the co2 or carbon emissions data. "
+                                    "It has the data for the following sectors, Domestic Aviation, Ground Transport, Industry, Residential, Power and ,International Aviation"
+                                    "For example, 'Residential' or 'Residential, Power'. If not provided, data for all sectors will be aggregated.",
+                    "type": "List[str]"
+                },
+                "years": {
+                    "description": "The specific year or list of years for which to filter the co2 or carbon emissions data. "
+                                    "It has information for every day from January to July for the years 2023 and 2024."
+                                    "For example, '2023' or '2023, 2024'.",
+                    "type": "List[int]",
+                },
+                "dates": {
+                    "description": "The specific date for which to filter the co2 or carbon emissions data. "
+                                    "The data is in the format of DD/MM/YYYY "
+                                    "It has information for every day from January to July for the years 2023 and 2024."
+                                    "For example, '01/01/2023'. ",
+                    "type": "List[str]",
+                },
+            }
+        }
+    }
+    </tools>
     },
     {
         "name": "get_sector_emission_data",
@@ -345,7 +384,7 @@ async def ask_question(user_question: UserQuestion):
     print("Clarified Question:", clarified_question)
 
     # Check if clarification failed and ask for more details if necessary
-    if "I don't understand" in clarified_question or clarified_question == question:
+    if "I don't understand" in clarified_question:
         return JSONResponse(content={"response": "I'm not sure I understood your question. Could you clarify or provide more detail?"})
 
     # Step 2: Get memory for this session (optional if you want memory)
@@ -415,7 +454,8 @@ async def ask_question(user_question: UserQuestion):
                 f"The user asked: '{question}'. The data retrieved is: '{response_data}'. "
                 f"Please generate a user friendly and a short ans simple descriptive response that clearly explains the result to the user. "
                 f"If needed, perform any additional analysis on the data before providing the response. Do not mention any internal analysis steps."
-                f"If receieved an error message in the response data, give response without revealing the error or talking about the error in your response. Gove a generic response."
+                f"If receieved an error message in the response data, give response without revealing the error or talking about the error in your response. Give a generic response."
+                f"Try to give the responses in a more easy and readable format by using several things like bullet points."
             )
 
             response_generation = groq_client.chat.completions.create(
@@ -428,6 +468,8 @@ async def ask_question(user_question: UserQuestion):
             descriptive_response = response_generation.choices[0].message.content
             # Update memory after the response (if using memory)
             update_memory(session_id, question, descriptive_response)
+
+            #print("Model memory: ", memory_store.get(1, []))
             return JSONResponse(content={"response": descriptive_response})
 
     # If no function name and parameters were extracted, have the LLM generate a response directly
@@ -449,6 +491,8 @@ async def ask_question(user_question: UserQuestion):
         llama_response_general = chat_completion.choices[0].message.content
         # Update memory after the conversational response
         update_memory(session_id, question, llama_response_general)
+
+        #print("Model memory: ", memory_store.get(1, []))
         return JSONResponse(content={"response": llama_response_general})
 
 # Function to parse the LLaMA model response and extract the function and parameters
