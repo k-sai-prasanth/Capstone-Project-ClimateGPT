@@ -9,9 +9,9 @@ from custom_tools.emissions_data import EmissionDataTool  # Specific year data
 from custom_tools.emission_data_average import EmissionDataTool_Average  # Average data
 from custom_tools.surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
 from custom_tools.carbon_monitor import CarbonEmissionDataTool # Carbon Emissions Data
-from sector_emission import SectorEmissionTool
-from rating_country import RatingCountryTool
-from energy_emissions import EnergyEmissionTool
+from custom_tools.sector_emission import SectorEmissionTool
+from custom_tools.rating_country import RatingCountryTool
+from custom_tools.energy_emissions import EnergyEmissionTool
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -73,8 +73,9 @@ def get_tool_declaration():
     <tools> 
     {
         "name": "get_emission_data",
-        "description": "Retrieve emission values for a specified country (or list of countries), year (or list of years), and emission type (or list of emission types). The function will return a JSON object with the requested information. If multiple countries, emission types, or specific years are queried, the function will provide the corresponding outputs for each. If the requested emission type does not exist, the function will return all emission types for the given country and year and suggest likely emission types. When parsing the parameters, if terms like 'sfc', 'methane', 'pfc', 'nf3', 'n2o', 'HFC PFC', or 'greenhouse' are mentioned, convert them to their respective emission types: 'sfc_emissions', 'methane_emissions', 'pfc_emissions', 'nf3_emissions', 'n2o_emissions', 'HFC_PFC_emissions', or 'green_house_emissions'. If the term is mentioned with or without the 'emissions' keyword, ensure it's mapped correctly for function calling. This tool accepts multiple countries, years, and emission types as lists. ",
+        "description": "Retrieve emission values for a specified country (or list of countries), year (or list of years), and emission type (or list of emission types). The function will return a JSON object with the requested information. If multiple countries, emission types, or specific years are queried, the function will provide the corresponding outputs for each. If the requested emission type does not exist, the function will return all emission types for the given country and year and suggest likely emission types. When parsing the parameters, if terms like 'sfc', 'methane', 'pfc', 'nf3', 'n2o', 'HFC PFC', or 'greenhouse' are mentioned, convert them to their respective emission types: 'sfc_emissions', 'methane_emissions', 'pfc_emissions', 'nf3_emissions', 'n2o_emissions', 'HFC_PFC_emissions', or 'green_house_emissions'. If the term is mentioned with or without the 'emissions' keyword, ensure it's mapped correctly for function calling. This tool accepts multiple countries, years, and emission types as lists.",
         "parameters": {
+            "type": "object",
             "properties": {
                 "country": {
                     "description": "The name of the country or a list of countries.",
@@ -82,18 +83,8 @@ def get_tool_declaration():
                     "items": {
                         "type": "string"
                     }
-                    "description": "The name of the country or a list of countries.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "year": {
-                    "description": "The year or a list of years for which the emission data is requested.",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
                     "description": "The year or a list of years for which the emission data is requested.",
                     "type": "array",
                     "items": {
@@ -107,15 +98,11 @@ def get_tool_declaration():
                         "type": "string"
                     }
                 }
-                    "description": "The emission type or a list of emission types. If the requested type doesn't exist, all emission types will be returned.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
+            },
+            "required": ["country"]
         }
     },
+
     {
         "name": "get_average_emission_data",
         "description": "Get the average emission value for a country across all years for a specified emission type, or the trend for the first/last x years. If terms like ‘decade’ or similar are used, convert them into the corresponding number of years.",
@@ -207,43 +194,54 @@ def get_tool_declaration():
     },
     {
         "name": "get_carbon_emission_data",
-        "description": "This tools helps to query CO2 emissions also known as carbon emissions data by specifying countries, sectors, years, and/or dates. "
-                        "If any of the requested parameters are not available, it provides relevant messages."
-                        "It has information for every day from January to July for the years 2023 and 2024."
-                        "If the data or year requested is not in this range, provide the value for the closest date to the requested data."
-                        "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World and WORLD."
-                        "It has the data for the following sectors, Domestic Aviation, Ground Transport, Industry, Residential, Power and ,International Aviation."
+        "description": "This tool helps to query CO2 emissions, also known as carbon emissions data, by specifying countries, sectors, years, and/or dates. "
+                       "If any of the requested parameters are not available, it provides relevant messages. "
+                       "It has information for every day from January to July for the years 2023 and 2024. "
+                       "If the data or year requested is not in this range, provide the value for the closest date to the requested data. "
+                       "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World, and WORLD. "
+                       "It has data for the following sectors: Domestic Aviation, Ground Transport, Industry, Residential, Power, and International Aviation.",
         "parameters": {
+            "type": "object",
             "properties": {
                 "countries": {
-                    "description": "The country or list of countries for which to fetch the co2 or carbon emissions data. "
-                                    "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World and WORLD."
-                                    "For example, 'India' or 'India, Brazil'. If not provided, data for all countries will be aggregated.",
-                    "type": "List[str]"
+                    "description": "The country or list of countries for which to fetch the CO2 or carbon emissions data. "
+                                   "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World, and WORLD. "
+                                   "For example, 'India' or 'India, Brazil'. If not provided, data for all countries will be aggregated.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "sectors": {
-                    "description": "The sector or list of sectors for which to fetch the co2 or carbon emissions data. "
-                                    "It has the data for the following sectors, Domestic Aviation, Ground Transport, Industry, Residential, Power and ,International Aviation"
-                                    "For example, 'Residential' or 'Residential, Power'. If not provided, data for all sectors will be aggregated.",
-                    "type": "List[str]"
+                    "description": "The sector or list of sectors for which to fetch the CO2 or carbon emissions data. "
+                                   "It has data for the following sectors: Domestic Aviation, Ground Transport, Industry, Residential, Power, and International Aviation. "
+                                   "For example, 'Residential' or 'Residential, Power'. If not provided, data for all sectors will be aggregated.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "years": {
-                    "description": "The specific year or list of years for which to filter the co2 or carbon emissions data. "
-                                    "It has information for every day from January to July for the years 2023 and 2024."
-                                    "For example, '2023' or '2023, 2024'.",
-                    "type": "List[int]",
+                    "description": "The specific year or list of years for which to filter the CO2 or carbon emissions data. "
+                                   "It has information for every day from January to July for the years 2023 and 2024. "
+                                   "For example, '2023' or '2023, 2024'.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "dates": {
-                    "description": "The specific date for which to filter the co2 or carbon emissions data. "
-                                    "The data is in the format of DD/MM/YYYY "
-                                    "It has information for every day from January to July for the years 2023 and 2024."
-                                    "For example, '01/01/2023'. ",
-                    "type": "List[str]",
-                },
+                    "description": "The specific date for which to filter the CO2 or carbon emissions data. "
+                                   "The data is in the format of DD/MM/YYYY. "
+                                   "It has information for every day from January to July for the years 2023 and 2024. "
+                                   "For example, '01/01/2023'.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
             }
         }
-    }
-    </tools>
     },
     {
         "name": "get_sector_emission_data",
