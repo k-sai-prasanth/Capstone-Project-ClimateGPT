@@ -150,11 +150,13 @@ def get_tool_declaration():
                        "It supports multiple operations, such as returning earth's surface temperature change for a particualr country, comparison between countries,"
                        "finding top 'n' countries with highest or lowest temperature changes, retrieving data that crosses a certain threshold, analyzing data over decades",
                        "The data is available from year 1961 to year 2023",
+                       "The functions has the following commands: temperature_change_for_country, temperature_change_between_years, compare_temperature_change, top_n_temperature_change, threshold_exceeded.",
+                       "Chose the appropriate command based on the user query." 
         "parameters": {
             "properties": {
                 "command": {
-                    "description": "It has list of commands to chose based on the question type.The available commands are temperature_change_for_country, temperature_change_between_years, compare_temperature_change," 
-                                    "top_n_temperature_change, threshold_exceeded.For example if question is regarding the surface temperature change for a particular country, then command = temperature_change_for_country.",
+                    "description": "It has list of commands to chose based on the question type. Analyze the question and fix the category based on question summary",
+                                    "The available commands are temperature_change_for_country, temperature_change_between_years, compare_temperature_change, top_n_temperature_change, threshold_exceeded."
                     "type": "string"
                 },
                 "country": {

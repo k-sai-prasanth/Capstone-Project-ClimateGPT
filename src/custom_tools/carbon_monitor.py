@@ -1,15 +1,16 @@
 import pandas as pd
 from typing import Dict, Any, List
-from commons.custom_tools import SingleMessageCustomTool
 from llama_stack_client.types.tool_param_definition_param import ToolParamDefinitionParam
+from src.commons.custom_tools import SingleMessageCustomTool
 
-# Load the emissions data globally, allowing access across all instances
-data = pd.read_csv('../Datasets/carbon_monitor_global.csv')
 
 class CarbonEmissionDataTool(SingleMessageCustomTool):
     """
     Tool to retrieve CO2 emission data based on specified criteria, including countries, sectors, years, and dates.
     """
+    def __init__(self, data: pd.DataFrame = None):
+        """Initialize the tool with an optional data parameter."""
+        self.data = data if data is not None else pd.read_csv('../Datasets/carbon_monitor_global.csv')
 
     def get_name(self) -> str:
         """Returns the name of the tool used for invocation."""
@@ -87,10 +88,10 @@ class CarbonEmissionDataTool(SingleMessageCustomTool):
         Returns:
         - dict: A dictionary with the filtered emission data and any error messages
         """
-        filtered_data = data.copy()
+        filtered_data = self.data.copy()
         messages = []
 
-        # Step 1: Filter by countries
+        # Filtering by countries
         if countries:
             available_countries = filtered_data['country'].unique()
             missing_countries = [c for c in countries if c not in available_countries]
@@ -98,7 +99,7 @@ class CarbonEmissionDataTool(SingleMessageCustomTool):
                 messages.append(f"Data for the following countries isn't available: {', '.join(missing_countries)}")
             filtered_data = filtered_data[filtered_data['country'].isin(countries)]
         
-        # Step 2: Filter by sectors
+        # Filtering by sectors
         if sectors:
             available_sectors = filtered_data['sector'].unique()
             missing_sectors = [s for s in sectors if s not in available_sectors]
@@ -106,7 +107,7 @@ class CarbonEmissionDataTool(SingleMessageCustomTool):
                 messages.append(f"Data for the following sectors in these countries isn't available: {', '.join(missing_sectors)}")
             filtered_data = filtered_data[filtered_data['sector'].isin(sectors)]
         
-        # Step 3: Filter by dates or years
+        # Filtering by dates or years
         if dates:
             filtered_data = filtered_data[filtered_data['date'].isin(dates)]
             emission_summary = filtered_data.groupby(['country', 'sector'])['MtCO2 per day'].sum().reset_index()
@@ -117,11 +118,11 @@ class CarbonEmissionDataTool(SingleMessageCustomTool):
         else:
             emission_summary = filtered_data.groupby(['country', 'sector'])['MtCO2 per day'].mean().reset_index()
 
-        # Rename columns for final output
+        # Renaming columns for final output
         emission_summary.columns = ['Country', 'Sector', 'Emissions']
         result = emission_summary.to_dict(orient='records')
 
-        # Include messages if any
+        # IFinal Output
         output = {
             'data': result,
             'messages': messages
