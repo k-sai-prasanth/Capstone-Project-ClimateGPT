@@ -256,11 +256,6 @@ def get_tool_declaration():
                     "items": {
                         "type": "string"
                     }
-                    "description": "The name of the country or a list of countries.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "Sector": {
                     "description": "The sector or a list of sectors or 'all' to include all sectors. Sectors can be Buildings, Industry, Electricity, Transport, Transport Road",
