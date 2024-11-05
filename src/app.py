@@ -12,7 +12,8 @@ from custom_tools.carbon_monitor import CarbonEmissionDataTool # Carbon Emission
 from custom_tools.sector_emission import SectorEmissionTool
 from custom_tools.rating_country import RatingCountryTool
 from custom_tools.energy_emissions import EnergyEmissionTool
-
+from custom_tools.Fueldatatool import FuelDataTool_Average
+from custom_tools.uk23_weatherdatatool import UK23WeatherDataTool
 # Initialize the FastAPI app
 app = FastAPI()
 
@@ -44,6 +45,8 @@ class UserQueryHandler:
         self.tool_rating_country = RatingCountryTool()
         self.tool_energy_emissions = EnergyEmissionTool()
         self.tool_carbon_emissions = CarbonEmissionDataTool()
+        self.tool_fuel_average = FuelDataTool_Average()
+        self.tool_uk23_weather = UK23WeatherDataTool()
         #Declare any new tools above this line
 
     # Function to handle queries
@@ -63,6 +66,10 @@ class UserQueryHandler:
             return await self.tool_energy_emissions.run_impl(**parameters)
         elif function_name == "get_carbon_emission_data":
             return await self.tool_carbon_emissions.run_impl(**parameters)
+        elif function_name == "get_average_fuel_emission_data":
+            return await self.tool_fuel_average.run_impl(**parameters)
+        elif function_name == "get_weather_data":  # Handle your tool's function call
+            return await self.tool_uk23_weather.run_impl(**parameters)
         #Declare any new Tools above this line
         else:
             return {"status": "error", "data": ["Unknown function requested by the model."]}
@@ -327,7 +334,39 @@ def get_tool_declaration():
             },
             "required": ["Country"]
         }
-    }    
+    }
+    {
+            "name": "get_weather_data",
+            "description": "Retrieve weather data for a specified country, date range, and selected weather attributes. This tool can provide information on temperature, precipitation, wind, humidity, and other metrics over a specified date range.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "Country": {
+                        "description": "The name of the country for which to retrieve the weather data. Use 'all' to include all available countries.",
+                        "type": "string"
+                    },
+                    "StartDate": {
+                        "description": "The start date for the range in 'YYYY-MM-DD' format.",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "EndDate": {
+                        "description": "The end date for the range in 'YYYY-MM-DD' format.",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "Attributes": {
+                        "description": "List of weather attributes to retrieve, e.g., 'tempmax', 'tempmin', 'humidity', 'precip', 'windspeed'. If not specified, default attributes will be included.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["Country", "StartDate", "EndDate"]
+            }
+        }
+        
     </tools>
     """
 
@@ -412,6 +451,15 @@ async def ask_question(user_question: UserQuestion):
         f"name: get_sector_emission_data, arguments: {{'Country': 'Australia', 'Sector': 'Transport', 'Year': 2020}} ."
         f"Example, If the user asks 'Give me the energy emissions of Australia', you should return: "
         f"name: get_energy_emission_data, arguments: {{'Country': 'Australia'}} ."
+        
+        f"Make sure to trigger the function call 'get_weather_data' if the question relates to weather data for a country, specifying the date range and attributes if provided. "
+        
+        f"For example, if the user asks 'What was the maximum temperature in the UK in January 2023?', you should return: "
+        f"name: 'get_weather_data', arguments: {{'Country': 'United Kingdom', 'StartDate': '2023-01-01', 'EndDate': '2023-01-31', 'Attributes': ['tempmax']}} ."
+
+        f"Example: If the user asks 'Give me the surface temperature change for India from 1970 in a 5-year shift', you should return: "
+        f"name: 'get_surface_temperature_change', arguments: {{'command': 'temperature_change_for_country', 'country': 'India', 'start_year': 1970, 'interval': 5}} ."
+        
     )
 
     # LLaMA response to decide between tool invocation and casual conversation
