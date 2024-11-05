@@ -43,15 +43,21 @@ class FuelDataTool_Average(SingleMessageCustomTool):
                 description="The number of years for which the trend is requested (only used with 'last x years', 'first x years', or 'trend for x years').",
                 required=False,  # Optional parameter for specifying number of years
             ),
+            "year": ToolParamDefinitionParam(
+                param_type="int",
+                description="Specific year for which to retrieve fuel data. If provided, data will be filtered for this year only.",
+                required=False,
+            ),
         }
 
     async def run_impl(self, country: str, fuel_type: str, trend_type: Optional[str] = "average", num_years: Optional[int] = 5, year: Optional[int] = None) -> Optional[Any]:
         # Convert country name to uppercase to match the dataset
         country = country.upper()
         
-        # Filter the dataset for the specified country and year
+        # Filter the dataset for the specified country and fuel type
         filtered_data = fuel_data[(fuel_data['Country'].str.upper() == country)]
 
+        # Filter by the specified year if provided
         if year:
             filtered_data = filtered_data[filtered_data['Year'] == year]
 
@@ -88,4 +94,3 @@ class FuelDataTool_Average(SingleMessageCustomTool):
         # If trend_type is not recognized, return an error message
         else:
             return {"error": "Invalid trend type. Please choose 'average', 'last x years', 'first x years', or 'trend for x years'."}
-

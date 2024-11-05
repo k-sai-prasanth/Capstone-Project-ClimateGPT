@@ -370,7 +370,37 @@ def get_tool_declaration():
             },
             "required": ["State", "StartDate", "EndDate"]
         }
+    },
+    {
+        "name": "get_average_fuel_emission_data",
+        "description": "Retrieve the average emission value or trend for a specified fuel type across all years or a defined period for a given country. Use this for queries mentioning 'fuel' or specific fuel types like 'Solid Fuel', 'Liquid Fuel', 'Gas Fuel', 'Cement', or 'Gas Flaring'.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "description": "The name of the country.",
+                    "type": "string"
+                },
+                "fuel_type": {
+                    "description": "The type of fuel (e.g., 'Solid Fuel', 'Liquid Fuel', 'Gas Fuel', 'Cement', 'Gas Flaring').",
+                    "type": "string"
+                },
+                "trend_type": {
+                    "description": "Specify 'average', 'last x years', 'first x years', or 'trend for x years'. Defaults to 'average'.",
+                    "type": "string",
+                    "enum": ["average", "last x years", "first x years", "trend for x years"],
+                    "default": "average"
+                },
+                "num_years": {
+                    "description": "Number of years for trend calculation, only used with 'last x years', 'first x years', or 'trend for x years'.",
+                    "type": "integer",
+                    "default": 5
+                }
+            },
+            "required": ["country", "fuel_type"]
+        }
     }
+
         
     </tools>
     """
@@ -464,7 +494,9 @@ async def ask_question(user_question: UserQuestion):
 
         f"Example: If the user asks 'Give me the surface temperature change for India from 1970 in a 5-year shift', you should return: "
         f"name: 'get_surface_temperature_change', arguments: {{'command': 'temperature_change_for_country', 'country': 'India', 'start_year': 1970, 'interval': 5}} ."
-        
+        # Fuel data example
+        f"For fuel-related queries, if the user asks 'What is Afghanistan's average solid fuel emission in 2014?', you should return: "
+        f"name: 'get_average_fuel_emission_data', arguments: {{'country': 'Afghanistan', 'fuel_type': 'Solid Fuel', 'year': 2014}} ."   
     )
 
     # LLaMA response to decide between tool invocation and casual conversation
