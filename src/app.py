@@ -14,6 +14,8 @@ from custom_tools.rating_country import RatingCountryTool
 from custom_tools.energy_emissions import EnergyEmissionTool
 from custom_tools.Fueldatatool import FuelDataTool_Average
 from custom_tools.uk23_weatherdatatool import UK23WeatherDataTool
+from custom_tools.usstateweathwedatatool import USStateWeatherDataTool
+
 # Initialize the FastAPI app
 app = FastAPI()
 
@@ -47,6 +49,7 @@ class UserQueryHandler:
         self.tool_carbon_emissions = CarbonEmissionDataTool()
         self.tool_fuel_average = FuelDataTool_Average()
         self.tool_uk23_weather = UK23WeatherDataTool()
+        self.tool_us_state_weather = USStateWeatherDataTool()
         #Declare any new tools above this line
 
     # Function to handle queries
@@ -70,6 +73,8 @@ class UserQueryHandler:
             return await self.tool_fuel_average.run_impl(**parameters)
         elif function_name == "get_weather_data":  # Handle your tool's function call
             return await self.tool_uk23_weather.run_impl(**parameters)
+        elif function_name == "get_us_state_weather_data":  # <-- Handle US state weather tool function call
+            return await self.tool_us_state_weather.run_impl(**parameters)
         #Declare any new Tools above this line
         else:
             return {"status": "error", "data": ["Unknown function requested by the model."]}
@@ -334,38 +339,38 @@ def get_tool_declaration():
             },
             "required": ["Country"]
         }
-    }
+    },
     {
-            "name": "get_weather_data",
-            "description": "Retrieve weather data for a specified country, date range, and selected weather attributes. This tool can provide information on temperature, precipitation, wind, humidity, and other metrics over a specified date range.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "Country": {
-                        "description": "The name of the country for which to retrieve the weather data. Use 'all' to include all available countries.",
-                        "type": "string"
-                    },
-                    "StartDate": {
-                        "description": "The start date for the range in 'YYYY-MM-DD' format.",
-                        "type": "string",
-                        "format": "date"
-                    },
-                    "EndDate": {
-                        "description": "The end date for the range in 'YYYY-MM-DD' format.",
-                        "type": "string",
-                        "format": "date"
-                    },
-                    "Attributes": {
-                        "description": "List of weather attributes to retrieve, e.g., 'tempmax', 'tempmin', 'humidity', 'precip', 'windspeed'. If not specified, default attributes will be included.",
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
+        "name": "get_us_state_weather_data",
+        "description": "Retrieve weather data for a specified U.S. state, date range, and selected weather attributes. This tool can provide information on temperature, precipitation, wind, humidity, and other metrics.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "State": {
+                    "description": "The name of the U.S. state for which to retrieve weather data (e.g., 'California'). Supported states are: Alabama, Alaska, Arizona, Arkansas, California, Colorado, Florida, Georgia, Illinois, Indiana, Kansas, Kentucky, Louisiana, Massachusetts, Michigan, Minnesota, Mississippi, Missouri, New Jersey, New York, North Carolina, Ohio, Oklahoma, Pennsylvania, Tennessee, Texas, and Washington.",
+                    "type": "string"
                 },
-                "required": ["Country", "StartDate", "EndDate"]
-            }
+                "StartDate": {
+                    "description": "The start date for the range in 'YYYY-MM-DD' format.",
+                    "type": "string",
+                    "format": "date"
+                },
+                "EndDate": {
+                    "description": "The end date for the range in 'YYYY-MM-DD' format.",
+                    "type": "string",
+                    "format": "date"
+                },
+                "Attributes": {
+                    "description": "List of weather attributes to retrieve, e.g., 'tempmax', 'tempmin', 'humidity', 'precip', 'windspeed'.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["State", "StartDate", "EndDate"]
         }
+    }
         
     </tools>
     """
