@@ -12,6 +12,9 @@ from custom_tools.carbon_monitor import CarbonEmissionDataTool # Carbon Emission
 from custom_tools.sector_emission import SectorEmissionTool
 from custom_tools.rating_country import RatingCountryTool
 from custom_tools.energy_emissions import EnergyEmissionTool
+from custom_tools.Fueldatatool import FuelDataTool_Average
+from custom_tools.uk23_weatherdatatool import UK23WeatherDataTool
+from custom_tools.usstateweathwedatatool import USStateWeatherDataTool
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -44,6 +47,9 @@ class UserQueryHandler:
         self.tool_rating_country = RatingCountryTool()
         self.tool_energy_emissions = EnergyEmissionTool()
         self.tool_carbon_emissions = CarbonEmissionDataTool()
+        self.tool_fuel_average = FuelDataTool_Average()
+        self.tool_uk23_weather = UK23WeatherDataTool()
+        self.tool_us_state_weather = USStateWeatherDataTool()
         #Declare any new tools above this line
 
     # Function to handle queries
@@ -63,6 +69,12 @@ class UserQueryHandler:
             return await self.tool_energy_emissions.run_impl(**parameters)
         elif function_name == "get_carbon_emission_data":
             return await self.tool_carbon_emissions.run_impl(**parameters)
+        elif function_name == "get_average_fuel_emission_data":
+            return await self.tool_fuel_average.run_impl(**parameters)
+        elif function_name == "get_weather_data":  # Handle your tool's function call
+            return await self.tool_uk23_weather.run_impl(**parameters)
+        elif function_name == "get_us_state_weather_data":  # <-- Handle US state weather tool function call
+            return await self.tool_us_state_weather.run_impl(**parameters)
         #Declare any new Tools above this line
         else:
             return {"status": "error", "data": ["Unknown function requested by the model."]}
@@ -327,7 +339,69 @@ def get_tool_declaration():
             },
             "required": ["Country"]
         }
-    }    
+    },
+    {
+        "name": "get_us_state_weather_data",
+        "description": "Retrieve weather data for a specified U.S. state, date range, and selected weather attributes. This tool can provide information on temperature, precipitation, wind, humidity, and other metrics.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "State": {
+                    "description": "The name of the U.S. state for which to retrieve weather data (e.g., 'California'). Supported states are: Alabama, Alaska, Arizona, Arkansas, California, Colorado, Florida, Georgia, Illinois, Indiana, Kansas, Kentucky, Louisiana, Massachusetts, Michigan, Minnesota, Mississippi, Missouri, New Jersey, New York, North Carolina, Ohio, Oklahoma, Pennsylvania, Tennessee, Texas, and Washington.",
+                    "type": "string"
+                },
+                "StartDate": {
+                    "description": "The start date for the range in 'YYYY-MM-DD' format.",
+                    "type": "string",
+                    "format": "date"
+                },
+                "EndDate": {
+                    "description": "The end date for the range in 'YYYY-MM-DD' format.",
+                    "type": "string",
+                    "format": "date"
+                },
+                "Attributes": {
+                    "description": "List of weather attributes to retrieve, e.g., 'tempmax', 'tempmin', 'humidity', 'precip', 'windspeed'.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["State", "StartDate", "EndDate"]
+        }
+    },
+    {
+        "name": "get_average_fuel_emission_data",
+        "description": "Retrieve the average emission value or trend for a specified fuel type across all years or a defined period for a given country. Use this for queries mentioning 'fuel' or specific fuel types like 'Solid Fuel', 'Liquid Fuel', 'Gas Fuel', 'Cement', or 'Gas Flaring'.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "description": "The name of the country.",
+                    "type": "string"
+                },
+                "fuel_type": {
+                    "description": "The type of fuel (e.g., 'Solid Fuel', 'Liquid Fuel', 'Gas Fuel', 'Cement', 'Gas Flaring').",
+                    "type": "string"
+                },
+                "trend_type": {
+                    "description": "Specify 'average', 'last x years', 'first x years', or 'trend for x years'. Defaults to 'average'.",
+                    "type": "string",
+                    "enum": ["average", "last x years", "first x years", "trend for x years"],
+                    "default": "average"
+                },
+                "num_years": {
+                    "description": "Number of years for trend calculation, only used with 'last x years', 'first x years', or 'trend for x years'.",
+                    "type": "integer",
+                    "default": 5
+                }
+            },
+            "required": ["country", "fuel_type"]
+        }
+    }
+
+        
     </tools>
     """
 
@@ -401,6 +475,10 @@ async def ask_question(user_question: UserQuestion):
         f"Consider the meaning and context of different user queries, even if phrased differently or with any spelling mistakes, and map them to the appropriate tool when possible."
         f"Understand and decode differnet types of shortforms, normal idioms, phrases, abbreviations etc. For example, ind stands for india"
         f"If the user question is in high level language, translate it to the normal language, convert any phrases,short forms or abbreviations and understand it and then decide on the tool and Json object."
+        f"Make sure to triger function call get_emissions_data if anything pertaining to sfc, pfc, n2o, nf3, methane, hfc pfc, greenhouse emissions are asked. If year is not specified, dont include it."
+        f"Make sure to trigger function get_average_emission_data if anything pertaining to sfc, pfc, n2o, nf3, methane, hfc pfc, greenhouse emissions are asked and if questions related to trend analysis is asked."
+        f"For example, If the user asks the question 'Give me the 5 year trend of sfc emissions for Australia, you should return: "
+        f"name: get_average_emission_data, arguments: {{'country': 'Australia', emission_type:'sfc_emissions', 'trend_type': 'trend for x years', 'num_years':'5'}}"
         f"Make sure to triger function call get_sector_emission_data if any of the sectors are specified along with emissions -> buildings, industry, electricity, transport, transport road"
         f"Make sure to triger function call get_country_rating if anything pertaining to rating is asked. It can be Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, Net zero target rating"
         f"Make sure to triger function call get_energy_emission_data if anything pertaining to energy is asked for a country. Get the parameters such as country, year and series type only if it is asked."
@@ -412,6 +490,17 @@ async def ask_question(user_question: UserQuestion):
         f"name: get_sector_emission_data, arguments: {{'Country': 'Australia', 'Sector': 'Transport', 'Year': 2020}} ."
         f"Example, If the user asks 'Give me the energy emissions of Australia', you should return: "
         f"name: get_energy_emission_data, arguments: {{'Country': 'Australia'}} ."
+        
+        f"Make sure to trigger the function call 'get_weather_data' if the question relates to weather data for a country, specifying the date range and attributes if provided. "
+        
+        f"For example, if the user asks 'What was the maximum temperature in the UK in January 2023?', you should return: "
+        f"name: 'get_weather_data', arguments: {{'Country': 'United Kingdom', 'StartDate': '2023-01-01', 'EndDate': '2023-01-31', 'Attributes': ['tempmax']}} ."
+
+        f"Example: If the user asks 'Give me the surface temperature change for India from 1970 in a 5-year shift', you should return: "
+        f"name: 'get_surface_temperature_change', arguments: {{'command': 'temperature_change_for_country', 'country': 'India', 'start_year': 1970, 'interval': 5}} ."
+        # Fuel data example
+        f"For fuel-related queries, if the user asks 'What is Afghanistan's average solid fuel emission in 2014?', you should return: "
+        f"name: 'get_average_fuel_emission_data', arguments: {{'country': 'Afghanistan', 'fuel_type': 'Solid Fuel', 'year': 2014}} ."   
     )
 
     # LLaMA response to decide between tool invocation and casual conversation

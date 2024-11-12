@@ -6,7 +6,7 @@ from llama_stack_client.types.tool_param_definition_param import (
 )
 
 # Load the emissions dataset globally or within the class as needed
-emissions_data = pd.read_csv('../Datasets/GreenHouseEmissions.csv')
+# emissions_data = pd.read_csv('../Datasets/GreenHouseEmissions.csv')
 
 class EmissionDataTool_Average(SingleMessageCustomTool):
     """
@@ -14,6 +14,9 @@ class EmissionDataTool_Average(SingleMessageCustomTool):
     If no trend is specified, it returns the average by default. If a trend for a specific number of years is asked, it returns
     the data for the last or first x years, depending on the query.
     """
+    def __init__(self, data: pd.DataFrame = None):
+        """Initialize the tool with an optional data parameter."""
+        self.data = data if data is not None else pd.read_csv('../Datasets/GreenHouseEmissions.csv')
 
     def get_name(self) -> str:
         return "get_average_emission_data"
@@ -46,6 +49,7 @@ class EmissionDataTool_Average(SingleMessageCustomTool):
         }
 
     async def run_impl(self, country: str, emission_type: str, trend_type: Optional[str] = "average", num_years: Optional[int] = 5) -> Optional[Any]:
+        emissions_data = self.data.copy()
         # Filter the dataset for the specified country
         filtered_data = emissions_data[emissions_data['Country or Area'] == country]
 

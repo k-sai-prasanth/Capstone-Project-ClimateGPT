@@ -6,7 +6,7 @@ from commons.custom_tools import SingleMessageCustomTool
 from llama_stack_client.types.tool_param_definition_param import ToolParamDefinitionParam
 
 # Load the emissions dataset globally or within the class as needed
-emissions_data = pd.read_csv('../Datasets/Sector_Emissions.csv')
+# emissions_data = pd.read_csv('../Datasets/Sector_Emissions.csv')
 
 class SectorEmissionTool(SingleMessageCustomTool):
     """
@@ -19,6 +19,9 @@ class SectorEmissionTool(SingleMessageCustomTool):
     If the requested country or sector type does not exist, it will return all sector types for the given country and year.
     If 'all' is passed for country, year, or sector, the function will include all available information for that parameter.
     """
+    def __init__(self, data: pd.DataFrame = None):
+        """Initialize the tool with an optional data parameter."""
+        self.data = data if data is not None else pd.read_csv('../Datasets/Sector_Emissions.csv')
 
     def get_name(self) -> str:
         return "get_sector_emission_data"
@@ -51,6 +54,7 @@ class SectorEmissionTool(SingleMessageCustomTool):
         }
 
     async def run_impl(self, Country: Union[str, List[str]], Sector: Optional[Union[str, List[str]]] = None, Year: Optional[Union[int, List[int]]] = None, Description: Optional[Union[str, List[str]]] = None) -> Optional[Any]:
+        emissions_data = self.data.copy()
         # Filter data based on the Country
         if Country == "all":
             filtered_data = emissions_data
