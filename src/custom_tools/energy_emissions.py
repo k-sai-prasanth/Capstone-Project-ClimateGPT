@@ -6,7 +6,7 @@ from commons.custom_tools import SingleMessageCustomTool
 from llama_stack_client.types.tool_param_definition_param import ToolParamDefinitionParam
 
 # Load the emissions dataset globally or within the class as needed
-emissions_data = pd.read_csv('../Datasets/Energy_Emissions.csv')
+# emissions_data = pd.read_csv('../Datasets/Energy_Emissions.csv')
 
 class EnergyEmissionTool(SingleMessageCustomTool):
     """
@@ -20,6 +20,9 @@ class EnergyEmissionTool(SingleMessageCustomTool):
     If the requested country or series type does not exist, it will return all series types for the given country and year.
     If 'all' is passed for country, year, or series, the function will include all available information for that parameter.
     """
+    def __init__(self, data: pd.DataFrame = None):
+        """Initialize the tool with an optional data parameter."""
+        self.data = data if data is not None else pd.read_csv('../Datasets/Energy_Emissions.csv')
 
     def get_name(self) -> str:
         return "get_energy_emission_data"
@@ -47,6 +50,7 @@ class EnergyEmissionTool(SingleMessageCustomTool):
         }
 
     async def run_impl(self, Country: Union[str, List[str]], Year: Optional[Union[int, List[int]]] = None, Series: Optional[Union[str, List[str]]] = None) -> Optional[Any]:
+        emissions_data = self.data.copy()
         # Step 1: Start with the full dataset
         filtered_data = emissions_data.copy()
 
