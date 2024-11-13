@@ -75,6 +75,22 @@ class UserQueryHandler:
             return await self.tool_uk23_weather.run_impl(**parameters)
         elif function_name == "get_us_state_weather_data":  # <-- Handle US state weather tool function call
             return await self.tool_us_state_weather.run_impl(**parameters)
+        elif function_name == "get_climate_policy_analysis":
+            return await self.tool_climate_policy_analysis.run_impl(**parameters)
+        elif function_name == "get_extreme_weather_analysis":
+            return await self.tool_extreme_weather_analysis.run_impl(**parameters)
+        elif function_name == "get_climate_risk_profile":
+            return await self.tool_climate_risk_profile.run_impl(**parameters)
+        elif function_name == "get_global_carbon_emissions":
+            return await self.tool_global_carbon_emissions.run_impl(**parameters)
+        elif function_name == "get_deforestation_data":
+            return await self.tool_deforestation_data.run_impl(**parameters)
+        elif function_name == "get_energy_mix_data":
+            return await self.tool_energy_mix_data.run_impl(**parameters)
+        elif function_name == "get_climate_policy_data":
+            return await self.tool_climate_policy_data.run_impl(**parameters)
+        elif function_name == "get_emission_monitoring_data":
+            return await self.tool_emission_monitoring_data.run_impl(**parameters)
         #Declare any new Tools above this line
         else:
             return {"status": "error", "data": ["Unknown function requested by the model."]}
@@ -400,8 +416,119 @@ def get_tool_declaration():
             "required": ["country", "fuel_type"]
         }
     }
-
-        
+    {
+        "name": "get_climate_policy_analysis",
+        "description": "Analyze climate policy data, including overall ratings, policy effectiveness, and net-zero target assessments.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "description": "The country to filter the climate policy data by.",
+                    "type": "string"
+                },
+                "component": {
+                    "description": "The specific policy component to query (e.g., 'Overall rating').",
+                    "type": "string"
+                },
+                "rating_threshold": {
+                    "description": "Minimum rating threshold for filtering results.",
+                    "type": "number"
+                }
+            }
+        }
+    }
+    {
+        "name": "get_extreme_weather_analysis",
+        "description": "Analyze extreme weather events, including heatwaves, floods, and hurricanes. Supports filtering by region, event type, and date range.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "region": {"description": "The region to filter by.", "type": "string"},
+                "event_type": {"description": "The type of extreme weather event (e.g., 'heatwave').", "type": "string"},
+                "start_date": {"description": "The start date for analysis ('YYYY-MM-DD').", "type": "string"},
+                "end_date": {"description": "The end date for analysis ('YYYY-MM-DD').", "type": "string"}
+            }
+        }
+    }
+    {
+        "name": "get_climate_risk_profile",
+        "description": "Provides a detailed climate risk profile for a specified country, including temperature and precipitation trends.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {"description": "The country for which to retrieve the climate risk profile.", "type": "string"},
+                "risk_type": {"description": "The specific type of risk to analyze (e.g., 'temperature').", "type": "string"},
+                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
+                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+            },
+            "required": ["country"]
+        }
+    }
+    {
+        "name": "get_global_carbon_emissions",
+        "description": "Provides detailed analysis of global carbon emissions data, supporting filters by country, sector, year, and emission type.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {"description": "The country to filter the data by.", "type": "string"},
+                "sector": {"description": "The sector to filter by (e.g., 'Industry').", "type": "string"},
+                "year": {"description": "The year to filter by.", "type": "integer"},
+                "emission_type": {"description": "The type of emission (e.g., 'CO2').", "type": "string"}
+            }
+        }
+    }
+    {
+        "name": "get_deforestation_data",
+        "description": "Provides detailed analysis of deforestation data, including rates and forest area changes, supporting filters by country, forest type, and year range.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {"description": "The country to filter the data by.", "type": "string"},
+                "forest_type": {"description": "The type of forest to analyze (e.g., 'Tropical').", "type": "string"},
+                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
+                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+            }
+        }
+    }
+    {
+        "name": "get_energy_mix_data",
+        "description": "Provides detailed analysis of energy mix data, including the share of different energy sources, supporting filters by country, energy source, and year range.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {"description": "The country to filter the data by.", "type": "string"},
+                "energy_source": {"description": "The type of energy source to analyze (e.g., 'Renewable').", "type": "string"},
+                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
+                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+            }
+        }
+    }
+    {
+        "name": "get_climate_policy_data",
+        "description": "Provides detailed analysis of national climate policies, supporting filters by country, policy type, and specific components.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {"description": "The country to filter the data by.", "type": "string"},
+                "policy_type": {"description": "The type of climate policy to analyze (e.g., 'Mitigation').", "type": "string"},
+                "component": {"description": "The specific component of the policy to query (e.g., 'Targets').", "type": "string"}
+            }
+        }
+    }
+    {
+        "name": "get_emission_monitoring_data",
+        "description": "Provides detailed monitoring of greenhouse gas emissions, supporting filters by country, sector, emission type, and year range.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "country": {"description": "The country to filter the data by.", "type": "string"},
+                "sector": {"description": "The sector to filter by (e.g., 'Industry').", "type": "string"},
+                "emission_type": {"description": "The type of emission to analyze (e.g., 'CO2').", "type": "string"},
+                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
+                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+            }
+        }
+    }
     </tools>
     """
 
