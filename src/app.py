@@ -310,14 +310,14 @@ def get_tool_declaration():
         "parameters": {
             "type": "object",
             "properties": {
-                "Country": {
+                "country": {
                     "description": "The name of the country or a list of countries.",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "Component": {
+                "component": {
                     "description": "The component to retrieve. Options include: Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, Net zero target. If not specified, all ratings will be returned by default.",
                     "type": "string"
                 }
