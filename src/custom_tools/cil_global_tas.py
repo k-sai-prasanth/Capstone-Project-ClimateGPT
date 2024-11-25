@@ -9,7 +9,7 @@ class CIL_Global_TAS_Tool(SingleMessageCustomTool):
         self.jja_data = data if data is not None else pd.read_csv("../Datasets/cil_global_tas_JJA.csv")
         self.djf_data = data if data is not None else pd.read_csv("../Datasets/cil_global_tas_DJF.csv")
         self.u32_data = data if data is not None else pd.read_csv("../Datasets/cil_global_tasmin_under32F.csv")
-        self.o32_data = data if data is not None else pd.read_csv("../Datasets/cil_global_tasmax_over32F.csv")
+        self.o95_data = data if data is not None else pd.read_csv("../Datasets/cil_global_tasmax_over95F.csv")
 
     def get_name(self) -> str:
         """
@@ -42,7 +42,7 @@ class CIL_Global_TAS_Tool(SingleMessageCustomTool):
                     "'jja' - June, July, August (summer data)\n"
                     "'djf' - December, January, February (winter data)\n"
                     "'u32' - Days with temperature below 32°F\n"
-                    "'o32' - Days with temperature above 32°F\n"
+                    "'o95' - Days with temperature above 95°F\n"
                     "None - Use annual global data"
                 ),
                 required=False
@@ -131,8 +131,8 @@ class CIL_Global_TAS_Tool(SingleMessageCustomTool):
             filtered_data = self.djf_data.copy()
         elif flag == 'u32':
             filtered_data = self.u32_data.copy()
-        elif flag == 'o32':
-            filtered_data = self.o32_data.copy()
+        elif flag == 'o95':
+            filtered_data = self.o95_data.copy()
         else:
             filtered_data = self.data.copy()
         

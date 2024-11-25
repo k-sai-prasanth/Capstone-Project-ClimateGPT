@@ -64,7 +64,7 @@ async def test_filter_by_ssp(tool_with_mock_data: CIL_Global_TAS_Tool):
 @pytest.mark.asyncio
 async def test_filter_by_percentiles(tool_with_mock_data: CIL_Global_TAS_Tool):
     """Test filtering by Percentiles, flag."""
-    result = await tool_with_mock_data.run_impl(percentiles=['0.50'], flag = "o32")
+    result = await tool_with_mock_data.run_impl(percentiles=['0.50'], flag = "o95")
     data = result['data']
     countries_in_data = set(item['country'] for item in data)
     assert countries_in_data == {'Aruba', 'UK', 'Afghanistan', 'Kenya'}
