@@ -187,16 +187,14 @@ async def test_aggregation(tool_with_mock_data: CIL_Global_TAS_Tool):
     """Test aggregation by Median."""
     result = await tool_with_mock_data.run_impl(aggregate=['median'])
     data = result['data']
-    print(data)
     assert len(data) == 1
-    assert [item['p0.95'] for item in data] == sample_data['p0.95'].agg('median')
+    assert [item['p0.95'] for item in data] == [sample_data['p0.95'].agg('median')]
 
 @pytest.mark.asyncio
 async def test_n(tool_with_mock_data: CIL_Global_TAS_Tool):
     """Test filter for N values."""
     result = await tool_with_mock_data.run_impl(n=4)
     data = result['data']
-    print(data)
     assert len(data) == 4
     assert [item['p0.95'] for item in data] == [83.41, 82.20, 81.47, 79.76]
 
@@ -205,6 +203,5 @@ async def test_sort(tool_with_mock_data: CIL_Global_TAS_Tool):
     """Test filter for all values witrh sorting."""
     result = await tool_with_mock_data.run_impl(sort="ascending", n=0)
     data = result['data']
-    print(data)
     assert len(data) == len(sample_data)
     assert [item['p0.95'] for item in data][0] == 53.23

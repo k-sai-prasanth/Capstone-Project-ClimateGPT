@@ -12,9 +12,9 @@ from custom_tools.carbon_emissions_tool import CarbonEmissionDataTool # Carbon E
 from custom_tools.sector_emission import SectorEmissionTool
 from custom_tools.rating_country import RatingCountryTool
 from custom_tools.energy_emissions import EnergyEmissionTool
-from custom_tools.Fueldatatool import FuelDataTool_Average
-from custom_tools.uk23_weatherdatatool import UK23WeatherDataTool
-from custom_tools.usstateweathwedatatool import USStateWeatherDataTool
+from custom_tools.fuel_data_tool import FuelDataTool_Average
+from custom_tools.uk23_weather_data_tool import UK23WeatherDataTool
+from custom_tools.us_state_weather_data_tool import USStateWeatherDataTool
 
 # Initialize the FastAPI app
 app = FastAPI()
