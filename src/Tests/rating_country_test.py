@@ -20,52 +20,52 @@ def tool_with_mock_data():
 
 @pytest.mark.asyncio
 async def test_filter_by_country(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['Argentina'])
+    result = await tool_with_mock_data.run_impl(country=['Argentina'])
     data = json.loads(result) if isinstance(result, str) else result
     assert all(item['Country'] == 'Argentina' for item in data)
 
 @pytest.mark.asyncio
 async def test_filter_by_component(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['Argentina'], Component=['Overall rating'])
+    result = await tool_with_mock_data.run_impl(country=['Argentina'], component=['Overall rating'])
     data = json.loads(result) if isinstance(result, str) else result
     assert all('Overall rating' in item for item in data)
     assert all('Policies and action' not in item for item in data)
 
 @pytest.mark.asyncio
 async def test_combined_filters(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['Argentina'], Component=['Overall rating', 'Net zero target'])
+    result = await tool_with_mock_data.run_impl(country=['Argentina'], component=['Overall rating', 'Net zero target'])
     data = json.loads(result) if isinstance(result, str) else result
     assert all(item['Country'] == 'Argentina' for item in data)
     assert all('Overall rating' in item and 'Net zero target' in item for item in data)
 
 @pytest.mark.asyncio
 async def test_missing_country(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['NonExistentCountry'])
+    result = await tool_with_mock_data.run_impl(country=['NonExistentCountry'])
     data = json.loads(result) if isinstance(result, str) else result
     assert data == []
 
 @pytest.mark.asyncio
 async def test_missing_component(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['Argentina'], Component=['NonExistentComponent'])
+    result = await tool_with_mock_data.run_impl(country=['Argentina'], component=['NonExistentComponent'])
     data = json.loads(result) if isinstance(result, str) else result
     assert all('NonExistentComponent' not in item for item in data)
 
 @pytest.mark.asyncio
 async def test_all_countries(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country="all", Component=['Overall rating'])
+    result = await tool_with_mock_data.run_impl(country="all", component=['Overall rating'])
     data = json.loads(result) if isinstance(result, str) else result
     countries = {item['Country'] for item in data}
     assert countries == set(sample_data['Country'].unique())
 
 @pytest.mark.asyncio
 async def test_all_components(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['Argentina'], Component="all")
+    result = await tool_with_mock_data.run_impl(country=['Argentina'], component="all")
     data = json.loads(result) if isinstance(result, str) else result
     assert all(column in data[0] for column in sample_data.columns if column != 'Country')
 
 @pytest.mark.asyncio
 async def test_all_countries_and_components(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country="all", Component="all")
+    result = await tool_with_mock_data.run_impl(country="all", component="all")
     data = json.loads(result) if isinstance(result, str) else result
     countries = {item['Country'] for item in data}
     assert countries == set(sample_data['Country'].unique())
@@ -73,13 +73,13 @@ async def test_all_countries_and_components(tool_with_mock_data):
 
 @pytest.mark.asyncio
 async def test_message_on_missing_data(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['NonExistentCountry'], Component=['NonExistentComponent'])
+    result = await tool_with_mock_data.run_impl(country=['NonExistentCountry'], component=['NonExistentComponent'])
     data = json.loads(result) if isinstance(result, str) else result
     assert data == []
 
 @pytest.mark.asyncio
 async def test_aggregation(tool_with_mock_data):
-    result = await tool_with_mock_data.run_impl(Country=['Argentina'], Component="all")
+    result = await tool_with_mock_data.run_impl(country=['Argentina'], component="all")
     data = json.loads(result) if isinstance(result, str) else result
     assert isinstance(data, list)
     assert all('Country' in item for item in data)

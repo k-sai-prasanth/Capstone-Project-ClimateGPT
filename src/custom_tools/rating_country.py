@@ -42,31 +42,23 @@ class RatingCountryTool(SingleMessageCustomTool):
             ),
         }
 
-    async def run_impl(self, Country: Union[str, List[str]], Component: Optional[Union[str, List[str]]] = None) -> Optional[Any]:
+    async def run_impl(self, country: Union[str, List[str]], component: Optional[Union[str, List[str]]] = None) -> Optional[Any]:
         emissions_data = self.data.copy()
-        # Handle 'all' for Country
-        if Country == "all":
+        # Handle 'all' for country
+        if country == "all":
             filtered_data = emissions_data
         else:
-            # Ensure Country is a list for consistent processing
-            if isinstance(Country, str):
-                Country = [Country]
-            # Filter the dataset for the specified countries
-            filtered_data = emissions_data[emissions_data['Country'].isin(Country)]
+            if isinstance(country, str):
+                country = [country]
+            filtered_data = emissions_data[emissions_data['Country'].isin(country)]
 
-        # Handle 'all' for Component
-        if Component == "all" or Component is None:
+        # Handle 'all' for component
+        if component == "all" or component is None:
             selected_columns = emissions_data.columns.tolist()
         else:
-            # Split the component string by commas if it’s a single string with multiple components
-            if isinstance(Component, str):
-                Component = [comp.strip() for comp in Component.split(",")]
+            if isinstance(component, str):
+                component = [comp.strip() for comp in component.split(",")]
+            selected_columns = ["Country"] + [comp for comp in component if comp in emissions_data.columns]
 
-            # Filter for the specified components and include "Country" in the selected columns
-            selected_columns = ["Country"] + [comp for comp in Component if comp in emissions_data.columns]
-
-        # Select only the necessary columns based on the Component and remove duplicates
         result_data = filtered_data[selected_columns].drop_duplicates()
-
-        # Return the result as a JSON object
         return result_data.to_json(orient="records", date_format="iso")
