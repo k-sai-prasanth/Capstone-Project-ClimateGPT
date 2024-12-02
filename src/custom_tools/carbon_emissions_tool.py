@@ -7,6 +7,7 @@ from commons.custom_tools import SingleMessageCustomTool
 class CarbonEmissionDataTool(SingleMessageCustomTool):
     """
     Tool to retrieve CO2 emission data based on specified criteria, including countries, sectors, years, and dates.
+    
     """
     def __init__(self, data: pd.DataFrame = None):
         """Initialize the tool with an optional data parameter."""

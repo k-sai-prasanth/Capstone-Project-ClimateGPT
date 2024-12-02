@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -8,7 +8,7 @@ from groq import Groq
 from custom_tools.emissions_data import EmissionDataTool  # Specific year data
 from custom_tools.emission_data_average import EmissionDataTool_Average  # Average data
 from custom_tools.surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
-from custom_tools.carbon_monitor import CarbonEmissionDataTool # Carbon Emissions Data
+from custom_tools.carbon_emissions_tool import CarbonEmissionDataTool # Carbon Emissions Data
 from custom_tools.sector_emission import SectorEmissionTool
 from custom_tools.rating_country import RatingCountryTool
 from custom_tools.energy_emissions import EnergyEmissionTool
@@ -154,8 +154,6 @@ def get_tool_declaration():
                     "description": "The number of years to use for trends (applicable only when using 'last x years', 'first x years', or 'trend for x years').",
                     "type": "integer",
                     "default": 5
-                "description": "The type of emission (e.g., 'sfc_emissions', 'n2o_emissions', 'methane_emissions, green_house_emissions, etc').",
-                "type": "string"
                 },
                 "trend_type": {
                     "description": "Defines whether to get 'average', 'last x years', 'first x years', or 'trend for x years'.",
@@ -173,19 +171,12 @@ def get_tool_declaration():
     },
     {
         "name": "get_surface_temperature_change",
-        "description": "This tool allows the user to query earth's surface temperature change data for one or more countries for a particular year or range of years or for decades," 
-                       "It supports multiple operations, such as returning earth's surface temperature change for a particualr country, comparison between countries,"
-                       "finding top 'n' countries with highest or lowest temperature changes, retrieving data that crosses a certain threshold, analyzing data over decades",
-                       "The data is available from year 1961 to year 2023",
-                       "The functions has the following commands: temperature_change_for_country, temperature_change_between_years, compare_temperature_change, top_n_temperature_change, threshold_exceeded.",
-                       "Chose the appropriate command based on the user query." 
+        "description": "This tool allows the user to query earth's surface temperature change data for one or more countries or regions,"
+                        "either for a specific year or over a defined period. It supports multiple operations, such as comparing countries,",
+                        "finding top 'n' countries with highest or lowest temperature changes, retrieving data that crosses a certain threshold,",
+                        "analyzing data over decades, or aggregating data for regions.",
         "parameters": {
             "properties": {
-                "command": {
-                    "description": "It has list of commands to chose based on the question type. Analyze the question and fix the category based on question summary",
-                                    "The available commands are temperature_change_for_country, temperature_change_between_years, compare_temperature_change, top_n_temperature_change, threshold_exceeded."
-                    "type": "string"
-                },
                 "country": {
                     "description": "The country or list of countries for which to fetch temperature change data."
                                     "For example, 'India' or 'India, Brazil'. If not provided, data for all countries will be aggregated.",
@@ -216,9 +207,24 @@ def get_tool_declaration():
                     "type": "int"
                 },
                 "interval": {
-                        "description": "The interval or shift in years. Used to get data at every 'interval' years starting from 'start_year'.",
-                        "type": "int"
+                    "description": "The interval or shift in years. Used to get data at every 'interval' years starting from 'start_year'.",
+                    "type": "int"
                 },
+                "comapre_years_difference": {
+                    "description": "Set to True to compare temperature changes between two years specified by 'start_year' and 'end_year', "
+                                    "filtering results based on 'difference_threshold' and 'increase_only'."
+                    "type": "bool"
+                },
+                "difference_threshold": {
+                    "description": "The threshold for the difference in temperature change between 'start_year' and 'end_year'. "
+                                    "Used when 'compare_years_difference' is True."
+                    "type": "float"
+                },
+                "increase_only": {
+                    "dsescription" : "When comparing years, if True, considers only positive increases exceeding the 'difference_threshold'. "
+                                      "If False, considers any absolute change exceeding the threshold."
+                    "type": "bool"
+                }
             }
         }
     },
@@ -723,3 +729,4 @@ def extract_function_and_parameters(response: str):
         }
     except Exception as e:
         return None
+

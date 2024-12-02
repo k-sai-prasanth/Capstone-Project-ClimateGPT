@@ -7,7 +7,7 @@ import pandas as pd
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, project_root)
 
-from src.custom_tools.carbon_monitor import CarbonEmissionDataTool
+from custom_tools.carbon_emissions_tool import CarbonEmissionDataTool
 
 # Mock data for testing
 sample_data = pd.DataFrame({
