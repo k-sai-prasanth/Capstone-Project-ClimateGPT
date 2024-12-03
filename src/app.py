@@ -5,6 +5,7 @@ from pydantic import BaseModel
 import json
 import os
 from groq import Groq
+from dotenv import load_dotenv
 from custom_tools.emissions_data import EmissionDataTool  # Specific year data
 from custom_tools.emission_data_average import EmissionDataTool_Average  # Average data
 from custom_tools.surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
@@ -28,8 +29,9 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 async def serve_frontend():
     return FileResponse(static_path + "/index.html")
 
+load_dotenv()
 # Set the Groq API key for the LLaMA model
-GROQ_API_KEY = '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'
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
 # Declare the Groq API client
 groq_client = Groq(api_key=GROQ_API_KEY)
@@ -101,30 +103,27 @@ def get_tool_declaration():
     <tools> 
     {
         "name": "get_emission_data",
-        "description": "Retrieve emission values for a specified country (or list of countries), year (or list of years), and emission type (or list of emission types). The function will return a JSON object with the requested information. If multiple countries, emission types, or specific years are queried, the function will provide the corresponding outputs for each. If the requested emission type does not exist, the function will return all emission types for the given country and year and suggest likely emission types. When parsing the parameters, if terms like 'sfc', 'methane', 'pfc', 'nf3', 'n2o', 'HFC PFC', or 'greenhouse' are mentioned, convert them to their respective emission types: 'sfc_emissions', 'methane_emissions', 'pfc_emissions', 'nf3_emissions', 'n2o_emissions', 'HFC_PFC_emissions', or 'green_house_emissions'. If the term is mentioned with or without the 'emissions' keyword, ensure it's mapped correctly for function calling. This tool accepts multiple countries, years, and emission types as lists.",
+        "description": "Retrieve emission values for a specified country (or list of countries), year (or list of years),", 
+                        "and emission type (or list of emission types). The function will return a JSON object with the requested information.",
+                        "If multiple countries, emission types, or specific years are queried, the function will provide the corresponding outputs for each.", 
+                        "If the requested emission type does not exist, the function will return all emission types for the given country and year and suggest", 
+                        "likely emission types. When parsing the parameters, if terms like 'sfc', 'methane', 'pfc', 'nf3', 'n2o', 'HFC PFC', or 'greenhouse' are mentioned,", 
+                        "convert them to their respective emission types: 'sfc_emissions', 'methane_emissions', 'pfc_emissions', 'nf3_emissions', 'n2o_emissions', 'HFC_PFC_emissions', or 'green_house_emissions'.", 
+                        "If the term is mentioned with or without the 'emissions' keyword, ensure it's mapped correctly for function calling. This tool accepts multiple countries, years, and emission types as lists.",
         "parameters": {
             "type": "object",
             "properties": {
                 "country": {
                     "description": "The name of the country or a list of countries.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "year": {
                     "description": "The year or a list of years for which the emission data is requested.",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "integer"
                 },
                 "emission_type": {
                     "description": "The emission type or a list of emission types. If the requested type doesn't exist, all emission types will be returned.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 }
             },
             "required": ["country"]
@@ -133,8 +132,10 @@ def get_tool_declaration():
 
     {
         "name": "get_average_emission_data",
-        "description": "Get the average emission value for a country across all years for a specified emission type, or the trend for the first/last x years. If terms like ‘decade’ or similar are used, convert them into the corresponding number of years.",
+        "description": "Get the average emission value for a country across all years for a specified emission type, or the trend for the first/last x years.", 
+                        "If terms like ‘decade’ or similar are used, convert them into the corresponding number of years.",
         "parameters": {
+            "type": "object",
             "properties": {
                 "country": {
                     "description": "The name of the country or area.",
@@ -155,30 +156,20 @@ def get_tool_declaration():
                     "type": "integer",
                     "default": 5
                 },
-                "trend_type": {
-                    "description": "Defines whether to get 'average', 'last x years', 'first x years', or 'trend for x years'.",
-                    "type": "string",
-                    "enum": ["average", "last x years", "first x years", "trend for x years"],
-                    "default": "average"
-                },
-                "num_years": {
-                    "description": "The number of years to use for trends (applicable only when using 'last x years', 'first x years', or 'trend for x years').",
-                    "type": "integer",
-                    "default": 5
-                }
             }
         }
     },
     {
         "name": "get_surface_temperature_change",
-        "description": "This tool allows the user to query earth's surface temperature change data for one or more countries or regions,"
+        "description": "This tool allows the user to query earth's surface temperature change data for one or more countries or regions,",
                         "either for a specific year or over a defined period. It supports multiple operations, such as comparing countries,",
                         "finding top 'n' countries with highest or lowest temperature changes, retrieving data that crosses a certain threshold,",
                         "analyzing data over decades, or aggregating data for regions.",
         "parameters": {
+            "type": "object",
             "properties": {
                 "country": {
-                    "description": "The country or list of countries for which to fetch temperature change data."
+                    "description": "The country or list of countries for which to fetch temperature change data.",
                                     "For example, 'India' or 'India, Brazil'. If not provided, data for all countries will be aggregated.",
                     "type": "string"
                 },
@@ -210,18 +201,18 @@ def get_tool_declaration():
                     "description": "The interval or shift in years. Used to get data at every 'interval' years starting from 'start_year'.",
                     "type": "int"
                 },
-                "comapre_years_difference": {
-                    "description": "Set to True to compare temperature changes between two years specified by 'start_year' and 'end_year', "
+                "compare_years_difference": {
+                    "description": "Set to True to compare temperature changes between two years specified by 'start_year' and 'end_year', ",
                                     "filtering results based on 'difference_threshold' and 'increase_only'."
                     "type": "bool"
                 },
                 "difference_threshold": {
-                    "description": "The threshold for the difference in temperature change between 'start_year' and 'end_year'. "
+                    "description": "The threshold for the difference in temperature change between 'start_year' and 'end_year'. ",
                                     "Used when 'compare_years_difference' is True."
                     "type": "float"
                 },
                 "increase_only": {
-                    "dsescription" : "When comparing years, if True, considers only positive increases exceeding the 'difference_threshold'. "
+                    "description" : "When comparing years, if True, considers only positive increases exceeding the 'difference_threshold'. ",
                                       "If False, considers any absolute change exceeding the threshold."
                     "type": "bool"
                 }
@@ -230,70 +221,59 @@ def get_tool_declaration():
     },
     {
         "name": "get_carbon_emission_data",
-        "description": "This tool helps to query CO2 emissions, also known as carbon emissions data, by specifying countries, sectors, years, and/or dates. "
-                       "If any of the requested parameters are not available, it provides relevant messages. "
-                       "It has information for every day from January to July for the years 2023 and 2024. "
-                       "If the data or year requested is not in this range, provide the value for the closest date to the requested data. "
-                       "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World, and WORLD. "
+        "description": "This tool helps to query CO2 emissions, also known as carbon emissions data, by specifying countries, sectors, years, and/or dates. ",
+                       "If any of the requested parameters are not available, it provides relevant messages. ",
+                       "It has information for every day from January to July for the years 2023 and 2024. ",
+                       "If the data or year requested is not in this range, provide the value for the closest date to the requested data. ",
+                       "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World, and WORLD. ",
                        "It has data for the following sectors: Domestic Aviation, Ground Transport, Industry, Residential, Power, and International Aviation.",
         "parameters": {
             "type": "object",
             "properties": {
                 "countries": {
-                    "description": "The country or list of countries for which to fetch the CO2 or carbon emissions data. "
-                                   "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World, and WORLD. "
+                    "description": "The country or list of countries for which to fetch the CO2 or carbon emissions data. ",
+                                   "The information is specified for the following countries only: Brazil, China, European Union, France, Germany, India, Italy, Japan, Russia, Spain, United Kingdom, United States, Rest of the World, and WORLD. ",
                                    "For example, 'India' or 'India, Brazil'. If not provided, data for all countries will be aggregated.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "sectors": {
-                    "description": "The sector or list of sectors for which to fetch the CO2 or carbon emissions data. "
-                                   "It has data for the following sectors: Domestic Aviation, Ground Transport, Industry, Residential, Power, and International Aviation. "
+                    "description": "The sector or list of sectors for which to fetch the CO2 or carbon emissions data. ",
+                                   "It has data for the following sectors: Domestic Aviation, Ground Transport, Industry, Residential, Power, and International Aviation. ",
                                    "For example, 'Residential' or 'Residential, Power'. If not provided, data for all sectors will be aggregated.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "years": {
-                    "description": "The specific year or list of years for which to filter the CO2 or carbon emissions data. "
-                                   "It has information for every day from January to July for the years 2023 and 2024. "
+                    "description": "The specific year or list of years for which to filter the CO2 or carbon emissions data. ",
+                                   "It has information for every day from January to July for the years 2023 and 2024. ",
                                    "For example, '2023' or '2023, 2024'.",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "integer"
                 },
                 "dates": {
-                    "description": "The specific date for which to filter the CO2 or carbon emissions data. "
-                                   "The data is in the format of DD/MM/YYYY. "
-                                   "It has information for every day from January to July for the years 2023 and 2024. "
+                    "description": "The specific date for which to filter the CO2 or carbon emissions data. ",
+                                   "The data is in the format of DD/MM/YYYY. ",
+                                   "It has information for every day from January to July for the years 2023 and 2024. ",
                                    "For example, '01/01/2023'.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 }
             }
         }
     },
     {
         "name": "get_sector_emission_data",
-        "description": "Trigger this function if Buildings, Industry, Electricity, Transport, Transport Road is specified in input. Get the sector(Buildings, Industry, Electricity, Transport, Transport Road) specific emission data for a country. sector can be Buildings, Industry, Electricity, Transport, Transport Road. If any of the following is specified Buildings, Industry, Electricity, Transport, Transport Road, call this function. This function will return the emission value for specific sector and country for a year.",
+        "description": "Trigger this function if Buildings, Industry, Electricity, Transport, Transport Road is specified in input.", 
+                        "Get the sector(Buildings, Industry, Electricity, Transport, Transport Road) specific emission data for a country.", 
+                        "sector can be Buildings, Industry, Electricity, Transport, Transport Road. If any of the following is specified Buildings, Industry, Electricity, Transport, Transport Road, call this function.", 
+                        "This function will return the emission value for specific sector and country for a year.",
         "parameters": {
+            "type": "object",
             "properties": {
                 "Country": {
                     "description": "The name of the country or a list of countries.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "Sector": {
                     "description": "The sector or a list of sectors or 'all' to include all sectors. Sectors can be Buildings, Industry, Electricity, Transport, Transport Road",
-                    "type": "string"
+                    "type": "string",
                     "enum": ["buildings", "industry", "electricity", "transport", "transport road"]
                 },
                 "Year": {
@@ -301,30 +281,31 @@ def get_tool_declaration():
                     "type": "string"
                 },
                 "Description": {
-                    "description": "Description explaining if any specific type is required such as 'Buildings emissions intensity (per floor area, commercial)', 'Buildings emissions intensity (per floor area, residential)', 'Buildings energy intensity (commercial)', 'Buildings energy intensity (residential)', 'Emissions intensity of electricity generation', 'Share of coal in electricity generation', 'Cement emissions intensity (per product)', 'Steel emissions intensity (per product)', 'Zero emission fuels for domestic transport', 'EV market share','EV stock shares','EVs per capita','Road transport emissions intensity', 'Steel emissions intensity (per product)' or similar to the list in meaning. Use the terms in the list to pass to the function",
+                    "description": "Description explaining if any specific type is required such as 'Buildings emissions intensity (per floor area, commercial)', 'Buildings emissions intensity (per floor area, residential)',", 
+                                    " 'Buildings energy intensity (commercial)', 'Buildings energy intensity (residential)', 'Emissions intensity of electricity generation', 'Share of coal in electricity generation',", 
+                                    " 'Cement emissions intensity (per product)', 'Steel emissions intensity (per product)', 'Zero emission fuels for domestic transport', 'EV market share','EV stock shares','EVs per capita',", 
+                                    " 'Road transport emissions intensity', 'Steel emissions intensity (per product)' or similar to the list in meaning. Use the terms in the list to pass to the function",
                     "type": "string"
                 
                 }
             },
-            "required": ["Country"],
-            "type": "object"
+            "required": ["Country"]
         }
     },
     {
         "name": "get_country_rating",
-        "description": "Retrieve country rating for a specific country based on the requested component. The components can include Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, and Net zero target. Explanations for each component are provided within the function.",
+        "description": "Retrieve country rating for a specific country based on the requested component. The components can include Overall rating, Policies and action, Domestic or supported target,", 
+                        "Fair share target, Climate finance, and Net zero target. Explanations for each component are provided within the function.",
         "parameters": {
             "type": "object",
             "properties": {
                 "country": {
                     "description": "The name of the country or a list of countries.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "component": {
-                    "description": "The component to retrieve. Options include: Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, Net zero target. If not specified, all ratings will be returned by default.",
+                    "description": "The component to retrieve. Options include: Overall rating, Policies and action, Domestic or supported target, Fair share target, Climate finance, Net zero target.", 
+                                    "If not specified, all ratings will be returned by default.",
                     "type": "string"
                 }
             },
@@ -333,30 +314,24 @@ def get_tool_declaration():
     },
     {
         "name": "get_energy_emission_data",
-        "description": "Retrieve energy emission values for a specified country (or list of countries). If year and series are specified, return specific information. Series values might include ['Primary energy production (petajoules)', 'Net imports [Imports - Exports - Bunkers] (petajoules)', 'Total supply (petajoules)', 'Supply per capita (gigajoules)', 'Changes in stocks (petajoules)']",
+        "description": "Retrieve energy emission values for a specified country (or list of countries). If year and series are specified, return specific information.", 
+                        "Series values might include ['Primary energy production (petajoules)', 'Net imports [Imports - Exports - Bunkers] (petajoules)', 'Total supply (petajoules)',", 
+                        " 'Supply per capita (gigajoules)', 'Changes in stocks (petajoules)']",
         "parameters": {
             "type": "object",
             "properties": {
                 "Country": {
                     "description": "The name of the country or a list of countries.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "Year": {
                     "description": "The year or a list of years for which the emission data is requested.",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "integer"
                 },
                 "Series": {
-                    "description": "The Series can include any information from 'Primary energy production (petajoules)', 'Net imports [Imports - Exports - Bunkers] (petajoules)', 'Total supply (petajoules)', 'Supply per capita (gigajoules)', 'Changes in stocks (petajoules)' or similar categories.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "description": "The Series can include any information from 'Primary energy production (petajoules)', 'Net imports [Imports - Exports - Bunkers] (petajoules)',", 
+                                    " 'Total supply (petajoules)', 'Supply per capita (gigajoules)', 'Changes in stocks (petajoules)' or similar categories.",
+                    "type": "string"
                 }
             },
             "required": ["Country"]
@@ -369,7 +344,8 @@ def get_tool_declaration():
             "type": "object",
             "properties": {
                 "State": {
-                    "description": "The name of the U.S. state for which to retrieve weather data (e.g., 'California'). Supported states are: Alabama, Alaska, Arizona, Arkansas, California, Colorado, Florida, Georgia, Illinois, Indiana, Kansas, Kentucky, Louisiana, Massachusetts, Michigan, Minnesota, Mississippi, Missouri, New Jersey, New York, North Carolina, Ohio, Oklahoma, Pennsylvania, Tennessee, Texas, and Washington.",
+                    "description": "The name of the U.S. state for which to retrieve weather data (e.g., 'California'). Supported states are: Alabama, Alaska, Arizona, Arkansas, California, Colorado, Florida, Georgia, Illinois,", 
+                                    "Indiana, Kansas, Kentucky, Louisiana, Massachusetts, Michigan, Minnesota, Mississippi, Missouri, New Jersey, New York, North Carolina, Ohio, Oklahoma, Pennsylvania, Tennessee, Texas, and Washington.",
                     "type": "string"
                 },
                 "StartDate": {
@@ -384,10 +360,7 @@ def get_tool_declaration():
                 },
                 "Attributes": {
                     "description": "List of weather attributes to retrieve, e.g., 'tempmax', 'tempmin', 'humidity', 'precip', 'windspeed'.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 }
             },
             "required": ["State", "StartDate", "EndDate"]
@@ -395,7 +368,8 @@ def get_tool_declaration():
     },
     {
         "name": "get_average_fuel_emission_data",
-        "description": "Retrieve the average emission value or trend for a specified fuel type across all years or a defined period for a given country. Use this for queries mentioning 'fuel' or specific fuel types like 'Solid Fuel', 'Liquid Fuel', 'Gas Fuel', 'Cement', or 'Gas Flaring'.",
+        "description": "Retrieve the average emission value or trend for a specified fuel type across all years or a defined period for a given country. Use this for queries mentioning 'fuel' or ", 
+                        "specific fuel types like 'Solid Fuel', 'Liquid Fuel', 'Gas Fuel', 'Cement', or 'Gas Flaring'.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -421,7 +395,7 @@ def get_tool_declaration():
             },
             "required": ["country", "fuel_type"]
         }
-    }
+    },
     {
         "name": "get_climate_policy_analysis",
         "description": "Analyze climate policy data, including overall ratings, policy effectiveness, and net-zero target assessments.",
@@ -442,96 +416,180 @@ def get_tool_declaration():
                 }
             }
         }
-    }
+    },
     {
         "name": "get_extreme_weather_analysis",
         "description": "Analyze extreme weather events, including heatwaves, floods, and hurricanes. Supports filtering by region, event type, and date range.",
         "parameters": {
             "type": "object",
             "properties": {
-                "region": {"description": "The region to filter by.", "type": "string"},
-                "event_type": {"description": "The type of extreme weather event (e.g., 'heatwave').", "type": "string"},
-                "start_date": {"description": "The start date for analysis ('YYYY-MM-DD').", "type": "string"},
-                "end_date": {"description": "The end date for analysis ('YYYY-MM-DD').", "type": "string"}
+                "region": {
+                    "description": "The region to filter by.", 
+                    "type": "string"
+                },
+                "event_type": {
+                    "description": "The type of extreme weather event (e.g., 'heatwave').", 
+                    "type": "string"
+                },
+                "start_date": {
+                    "description": "The start date for analysis ('YYYY-MM-DD').", 
+                    "type": "string"
+                    },
+                "end_date": {
+                    "description": "The end date for analysis ('YYYY-MM-DD').", 
+                    "type": "string"
+                }
             }
         }
-    }
+    },
     {
         "name": "get_climate_risk_profile",
         "description": "Provides a detailed climate risk profile for a specified country, including temperature and precipitation trends.",
         "parameters": {
             "type": "object",
             "properties": {
-                "country": {"description": "The country for which to retrieve the climate risk profile.", "type": "string"},
-                "risk_type": {"description": "The specific type of risk to analyze (e.g., 'temperature').", "type": "string"},
-                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
-                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+                "country": {
+                    "description": "The country for which to retrieve the climate risk profile.", 
+                    "type": "string"
+                },
+                "risk_type": {
+                    "description": "The specific type of risk to analyze (e.g., 'temperature').", 
+                    "type": "string"
+                },
+                "start_year": {
+                    "description": "The starting year for analysis.", 
+                    "type": "integer
+                },
+                "end_year": {
+                    "description": "The ending year for analysis.", 
+                    "type": "integer"
+                }
             },
             "required": ["country"]
         }
-    }
+    },
     {
         "name": "get_global_carbon_emissions",
         "description": "Provides detailed analysis of global carbon emissions data, supporting filters by country, sector, year, and emission type.",
         "parameters": {
             "type": "object",
             "properties": {
-                "country": {"description": "The country to filter the data by.", "type": "string"},
-                "sector": {"description": "The sector to filter by (e.g., 'Industry').", "type": "string"},
-                "year": {"description": "The year to filter by.", "type": "integer"},
-                "emission_type": {"description": "The type of emission (e.g., 'CO2').", "type": "string"}
+                "country": {
+                    "description": "The country to filter the data by.", 
+                    "type": "string"
+                },
+                "sector": {
+                    "description": "The sector to filter by (e.g., 'Industry').", 
+                    "type": "string"
+                },
+                "year": {
+                    "description": "The year to filter by.", 
+                    "type": "integer"
+                },
+                "emission_type": {
+                    "description": "The type of emission (e.g., 'CO2').", 
+                    "type": "string"
+                }
             }
         }
-    }
+    },
     {
         "name": "get_deforestation_data",
         "description": "Provides detailed analysis of deforestation data, including rates and forest area changes, supporting filters by country, forest type, and year range.",
         "parameters": {
             "type": "object",
             "properties": {
-                "country": {"description": "The country to filter the data by.", "type": "string"},
-                "forest_type": {"description": "The type of forest to analyze (e.g., 'Tropical').", "type": "string"},
-                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
-                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+                "country": {
+                    "description": "The country to filter the data by.", 
+                    "type": "string"
+                },
+                "forest_type": {
+                    "description": "The type of forest to analyze (e.g., 'Tropical').", 
+                    "type": "string"
+                },
+                "start_year": {
+                    "description": "The starting year for analysis.", 
+                    "type": "integer"
+                },
+                "end_year": {
+                    "description": "The ending year for analysis.", 
+                    "type": "integer"
+                }
             }
         }
-    }
+    },
     {
         "name": "get_energy_mix_data",
         "description": "Provides detailed analysis of energy mix data, including the share of different energy sources, supporting filters by country, energy source, and year range.",
         "parameters": {
             "type": "object",
             "properties": {
-                "country": {"description": "The country to filter the data by.", "type": "string"},
-                "energy_source": {"description": "The type of energy source to analyze (e.g., 'Renewable').", "type": "string"},
-                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
-                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+                "country": {
+                    "description": "The country to filter the data by.", 
+                    "type": "string"
+                },
+                "energy_source": {
+                    "description": "The type of energy source to analyze (e.g., 'Renewable').", 
+                    "type": "string"
+                },
+                "start_year": {
+                    "description": "The starting year for analysis.", 
+                    "type": "integer"
+                },
+                "end_year": {
+                    "description": "The ending year for analysis.", 
+                    "type": "integer"
+                }
             }
         }
-    }
+    },
     {
         "name": "get_climate_policy_data",
         "description": "Provides detailed analysis of national climate policies, supporting filters by country, policy type, and specific components.",
         "parameters": {
             "type": "object",
             "properties": {
-                "country": {"description": "The country to filter the data by.", "type": "string"},
-                "policy_type": {"description": "The type of climate policy to analyze (e.g., 'Mitigation').", "type": "string"},
-                "component": {"description": "The specific component of the policy to query (e.g., 'Targets').", "type": "string"}
+                "country": {
+                    "description": "The country to filter the data by.", 
+                    "type": "string"
+                },
+                "policy_type": {
+                    "description": "The type of climate policy to analyze (e.g., 'Mitigation').", 
+                    "type": "string"
+                },
+                "component": {
+                    "description": "The specific component of the policy to query (e.g., 'Targets').", 
+                    "type": "string"
+                }
             }
         }
-    }
+    },
     {
         "name": "get_emission_monitoring_data",
         "description": "Provides detailed monitoring of greenhouse gas emissions, supporting filters by country, sector, emission type, and year range.",
         "parameters": {
             "type": "object",
             "properties": {
-                "country": {"description": "The country to filter the data by.", "type": "string"},
-                "sector": {"description": "The sector to filter by (e.g., 'Industry').", "type": "string"},
-                "emission_type": {"description": "The type of emission to analyze (e.g., 'CO2').", "type": "string"},
-                "start_year": {"description": "The starting year for analysis.", "type": "integer"},
-                "end_year": {"description": "The ending year for analysis.", "type": "integer"}
+                "country": {
+                    "description": "The country to filter the data by.", 
+                    "type": "string"
+                },
+                "sector": {
+                    "description": "The sector to filter by (e.g., 'Industry').", 
+                    "type": "string"
+                },
+                "emission_type": {
+                    "description": "The type of emission to analyze (e.g., 'CO2').", 
+                    "type": "string"
+                },
+                "start_year": {
+                    "description": "The starting year for analysis.", 
+                    "type": "integer"
+                },
+                "end_year": {
+                    "description": "The ending year for analysis.", 
+                    "type": "integer"
+                }
             }
         }
     }
