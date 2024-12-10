@@ -11,6 +11,12 @@ class RenNinjaTool(SingleMessageCustomTool):
         self.wind_data_longterm = data if data is not None else pd.read_csv("../Datasets/ninja_wind_europe_v1.1_future_longterm_national.csv")
         self.wind_data_nearterm = data if data is not None else pd.read_csv("../Datasets/ninja_wind_europe_v1.1_future_nearterm_national.csv")
 
+    def get_name(self) -> str:
+        """
+        Returns the name of the tool used for invocation.
+        """
+        return "get_ren_ninja"
+        
     def get_description(self) -> str:
         """
         Returns a description of the get_ren_ninja tool.
