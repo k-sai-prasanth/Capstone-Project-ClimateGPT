@@ -16,17 +16,37 @@ The repository is structured for ease of collaboration and modular development:
 
 ### **Files Structure**
 
-Capstone-Project-ClimateGPT/
-├── src/                     # Source code
-│   ├── app.py               # Main application file
-│   ├── commons/             # Shared utilities and configurations
-│   ├── custom_tools/        # Modular tools for querying specific datasets
-│   ├── Tests/               # Unit tests for functionality verification
-├── Datasets/                # Datasets integrated into the project
-├── requirements.txt         # Python dependencies
-├── README.md                # Project documentation
-├── .env                     # Environment configuration
-└── .gitignore               # Git ignored files
+### **Folders**
+- **Datasets/**  
+  Contains raw and processed datasets in formats like `.csv` and `.json` used throughout the project.
+
+- **Src/**  
+  Houses the source code and tools:
+  - **Commons/**: Shared modules, utility functions, and configurations.
+  - **Custom_tools/**: Project-specific tools including:
+    - `emission_data_average.py`: Calculates average emission data.
+    - `surface_temperature_change.py`: Monitors Earth's surface temperature changes.
+    - `carbon_monitor.py`: Tracks carbon emissions.
+  - **Static/**: Stores static resources such as images, templates, or configuration files.
+
+- **Tests/**  
+  Contains unit and integration test scripts to ensure the reliability of tools and application components.
+
+### **Files**
+- **app.py**  
+  The central application file built with FastAPI, integrating all tools and APIs.
+
+- **.coverage**  
+  A coverage report file tracking test coverage using `coverage.py`.
+
+- **.gitignore**  
+  Lists files and directories to be ignored by Git (e.g., environment files, logs).
+
+- **README.md**  
+  Documentation for the project, including an overview, setup instructions, and usage guidelines.
+
+- **requirements.txt**  
+  Specifies the Python dependencies required to run the project.
 
 ---
 
@@ -42,16 +62,23 @@ Ensure you have the following installed:
    ```bash
    git clone https://github.com/newsconsole/GMU_DAEN_Team_3.git
    cd GMU_DAEN_Team_3
-
-
+   ```
 ### Install dependencies:
+```bash
 pip install -r requirements.txt
+```
 
 ## Usage
 ### Running the Application
-1. Start the application: python src/app.py
-2. Start the web app: uvicorn app:app --reload from src folder
-3. Access the application through the FastAPI interface, typically at http://127.0.0.1:8000.
+1. Start the application:
+   ```bash
+   python src/app.py
+   ```
+3. Start the web app:
+   ```bash
+   uvicorn app:app --reload from src folder
+   ```
+5. Access the application through the FastAPI interface, typically at http://127.0.0.1:8000.
 
 ### Tools and Features
 
@@ -106,11 +133,15 @@ This section can be added to the README file or documentation for a quick overvi
 
 
 ## Testing
-Run tests: pytest
+Run tests: 
+```bash
+pytest
+```
 Coverage reports can be generated using:
+```bash
 coverage run -m pytest
 coverage report
-
+```
 ## Future Enhancements
 Expand the range of datasets to include financial, policy, and additional climate-related data.
 Enhance the integration of the LLAMA model for improved insights.
