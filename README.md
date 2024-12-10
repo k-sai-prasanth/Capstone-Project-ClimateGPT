@@ -24,7 +24,7 @@ The repository is structured for ease of collaboration and modular development:
 - **Src/**  
   Houses the source code and tools:
   - **Commons/**: Shared modules, utility functions, and configurations.
-  - **Custom_tools/**: Project-specific tools including:
+  - **Custom_tools/**: Project-specific tools like:
     - `emission_data_average.py`: Calculates average emission data.
     - `surface_temperature_change.py`: Monitors Earth's surface temperature changes.
     - `carbon_monitor.py`: Tracks carbon emissions.
@@ -65,9 +65,9 @@ Ensure you have the following installed:
    cd GMU_DAEN_Team_3
    ```
 2. Install dependencies:
-```bash
-pip install -r requirements.txt
-``` 
+   ```bash
+   pip install -r requirements.txt
+   ``` 
 3. Configure the .env file with the necessary credentials.
 
 ## Usage
