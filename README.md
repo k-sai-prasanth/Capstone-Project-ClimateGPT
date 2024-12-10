@@ -66,7 +66,8 @@ Ensure you have the following installed:
 ### Install dependencies:
 ```bash
 pip install -r requirements.txt
-```
+``` 
+### Configure the .env file with the necessary credentials.
 
 ## Usage
 ### Running the Application
