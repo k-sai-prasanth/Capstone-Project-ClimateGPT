@@ -1,4 +1,4 @@
-# ClimateGPT Project
+# IMPROVING THE PERFORMANCE OF CLIMATEGPT
 
 ## Overview
 The ClimateGPT project integrates state-of-the-art AI models, such as LLAMA, with climate research to provide real-time insights and solutions to global climate concerns. By combining sophisticated analytics, robust data handling mechanisms, and modular APIs, ClimateGPT aims to support decision-making for a sustainable future.
@@ -17,6 +17,7 @@ The repository is structured for ease of collaboration and modular development:
 ### **Files Structure**
 
 ### **Folders**
+
 - **Datasets/**  
   Contains raw and processed datasets in formats like `.csv` and `.json` used throughout the project.
 
@@ -63,11 +64,11 @@ Ensure you have the following installed:
    git clone https://github.com/newsconsole/GMU_DAEN_Team_3.git
    cd GMU_DAEN_Team_3
    ```
-### Install dependencies:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ``` 
-### Configure the .env file with the necessary credentials.
+3. Configure the .env file with the necessary credentials.
 
 ## Usage
 ### Running the Application
@@ -75,11 +76,13 @@ pip install -r requirements.txt
    ```bash
    python src/app.py
    ```
-3. Start the web app:
+2. Start the web app:
    ```bash
    uvicorn app:app --reload from src folder
    ```
-5. Access the application through the FastAPI interface, typically at http://127.0.0.1:8000.
+3. Access the application through the FastAPI interface, typically at http://127.0.0.1:8000.
+
+---
 
 ### Tools and Features
 
@@ -132,27 +135,28 @@ Below are the tools included in the ClimateGPT project, along with their descrip
 
 This section can be added to the README file or documentation for a quick overview of the project tools. Let me know if you need further refinements!
 
+---
 
 ## Testing
-Run tests: 
-```bash
-pytest
-```
-Coverage reports can be generated using:
-```bash
-coverage run -m pytest
-coverage report
-```
+1. Run tests:
+   ```bash
+   pytest
+   ```
+2. Coverage reports can be generated using:
+   ```bash
+   coverage run -m pytest
+   coverage report
+   ```
+---
+
 ## Future Enhancements
 Expand the range of datasets to include financial, policy, and additional climate-related data.
 Enhance the integration of the LLAMA model for improved insights.
 Develop a user-friendly front-end interface.
 Implement additional tools for renewable energy analysis and policy impact assessment.
 
-
 ## Contributors
 Team Twisters - DEAN 690
 
 ## Acknowledgments
 We want to thank George Mason University and Erasmus.AI for their guidance and support in developing this project.
-
