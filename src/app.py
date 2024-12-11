@@ -8,13 +8,15 @@ from groq import Groq
 from custom_tools.emissions_data import EmissionDataTool  # Specific year data
 from custom_tools.emission_data_average import EmissionDataTool_Average  # Average data
 from custom_tools.surface_temperature_change import SurfaceTemperatureChangeTool  # Earth Surface Temperature Change Data
-from custom_tools.carbon_monitor import CarbonEmissionDataTool # Carbon Emissions Data
+from custom_tools.carbon_emissions_tool import CarbonEmissionDataTool # Carbon Emissions Data
 from custom_tools.sector_emission import SectorEmissionTool
 from custom_tools.rating_country import RatingCountryTool
 from custom_tools.energy_emissions import EnergyEmissionTool
-from custom_tools.Fueldatatool import FuelDataTool_Average
-from custom_tools.uk23_weatherdatatool import UK23WeatherDataTool
-from custom_tools.usstateweathwedatatool import USStateWeatherDataTool
+from custom_tools.fuel_data_tool import FuelDataTool_Average
+from custom_tools.uk23_weather_data_tool import UK23WeatherDataTool
+from custom_tools.us_state_weather_data_tool import USStateWeatherDataTool
+from custom_tools.ren_ninja import RenNinjaTool
+from custom_tools.cil_tas import CIL_TAS_Tool
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -50,6 +52,8 @@ class UserQueryHandler:
         self.tool_fuel_average = FuelDataTool_Average()
         self.tool_uk23_weather = UK23WeatherDataTool()
         self.tool_us_state_weather = USStateWeatherDataTool()
+        self.tool_ren_ninja  = RenNinjaTool()
+        self.tool_cil_tas = CIL_TAS_Tool()
         #Declare any new tools above this line
 
     # Function to handle queries
@@ -91,6 +95,10 @@ class UserQueryHandler:
             return await self.tool_climate_policy_data.run_impl(**parameters)
         elif function_name == "get_emission_monitoring_data":
             return await self.tool_emission_monitoring_data.run_impl(**parameters)
+        elif function_name == "get_ren_ninja":
+            return await self.tool_ren_ninja.run_impl(**parameters)
+        elif function_name == "get_cil_tas":
+            return await self.tool_cil_tas.run_impl(**parameters)
         #Declare any new Tools above this line
         else:
             return {"status": "error", "data": ["Unknown function requested by the model."]}
@@ -135,6 +143,7 @@ def get_tool_declaration():
         "name": "get_average_emission_data",
         "description": "Get the average emission value for a country across all years for a specified emission type, or the trend for the first/last x years. If terms like ‘decade’ or similar are used, convert them into the corresponding number of years.",
         "parameters": {
+            "type": "object",
             "properties": {
                 "country": {
                     "description": "The name of the country or area.",
@@ -153,9 +162,7 @@ def get_tool_declaration():
                 "num_years": {
                     "description": "The number of years to use for trends (applicable only when using 'last x years', 'first x years', or 'trend for x years').",
                     "type": "integer",
-                    "default": 5
-                "description": "The type of emission (e.g., 'sfc_emissions', 'n2o_emissions', 'methane_emissions, green_house_emissions, etc').",
-                "type": "string"
+                    "default": "5"
                 },
                 "trend_type": {
                     "description": "Defines whether to get 'average', 'last x years', 'first x years', or 'trend for x years'.",
@@ -166,7 +173,7 @@ def get_tool_declaration():
                 "num_years": {
                     "description": "The number of years to use for trends (applicable only when using 'last x years', 'first x years', or 'trend for x years').",
                     "type": "integer",
-                    "default": 5
+                    "default": "5"
                 }
             }
         }
@@ -180,6 +187,7 @@ def get_tool_declaration():
                        "The functions has the following commands: temperature_change_for_country, temperature_change_between_years, compare_temperature_change, top_n_temperature_change, threshold_exceeded.",
                        "Chose the appropriate command based on the user query." 
         "parameters": {
+            "type": "object",
             "properties": {
                 "command": {
                     "description": "It has list of commands to chose based on the question type. Analyze the question and fix the category based on question summary",
@@ -193,11 +201,11 @@ def get_tool_declaration():
                 },
                 "start_year": {
                     "description: "The starting year for the data. If not provided, it will include all available years.",
-                    "type": "int"
+                    "type": "integer"
                 },
                 "end_year": {
                     "description: "The ending year for the data. If not provided, it will include all available years.",
-                    "type": "int"
+                    "type": "integer"
                 },
                 "threshold": {
                     "description: "Temperature change threshold in degrees Celsius. Used to filter results",
@@ -205,19 +213,19 @@ def get_tool_declaration():
                 },
                 "top_n": {
                     "description: "The number of top countries or regions to retrieve based on temperature change. Default is 5.",
-                    "type": "int"
+                    "type": "integer"
                 },
                 "ascending": {
                     "description: "If True, returns countries or regions with the lowest anomalies, else returns the highest.",
-                    "type": "bool"
+                    "type": "boolean"
                 },
                 "decade_start": {
                     "description: "The starting year of the decade for decade-level analysis. Should be a multiple of 10.",
-                    "type": "int"
+                    "type": "integer"
                 },
                 "interval": {
                         "description": "The interval or shift in years. Used to get data at every 'interval' years starting from 'start_year'.",
-                        "type": "int"
+                        "type": "integer"
                 },
             }
         }
@@ -388,6 +396,144 @@ def get_tool_declaration():
         }
     },
     {
+        "name": "get_ren_ninja",
+        "description": "Retrieve renewable energy data for photovoltaic (PV) or wind energy. Allows querying by energy type, wind farm stage, countries, dates, months, years, and hours. The tool supports data aggregation, grouping, merging, and sorting, providing insights into energy trends and capacity factors.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "description": "Specifies the energy type: 'pv' for photovoltaic data or 'wind' for wind data.",
+                    "type": "string"
+                },
+                "flag": {
+                    "description": "Applicable for wind data only. Specifies the wind farm stage: 'longterm' for long-term planning, 'nearterm' for projects under construction or planning approval, or None for current wind farms.",
+                    "type": "string"
+                },
+                "countries": {
+                    "description": "List of country codes to filter the data.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "dates": {
+                    "description": "List of specific dates to filter the data (format: YYYY-MM-DD).",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "months": {
+                    "description": "List of months (1-12) to filter the data.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "years": {
+                    "description": "List of years to filter the data.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "hours": {
+                    "description": "List of hours (0-23) to filter the data.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "data_merge": {
+                    "description": "Specifies the level of data merging: 'daily', 'monthly', or 'yearly'. Aggregates the capacity factors over the specified time scale.",
+                    "type": "string"
+                },
+                "group_by": {
+                    "description": "Groups data by a specific column, e.g., 'country' or 'time'. Supports aggregations within the group.",
+                    "type": "string"
+                },
+                "aggregate": {
+                    "description": "Specifies the aggregation method (e.g., 'mean', 'sum', 'max', 'min').",
+                    "type": "string"
+                },
+                "sort": {
+                    "description": "Sort order for capacity factor data: 'ascending' or 'descending' (default: 'descending').",
+                    "type": "string"
+                },
+                "n": {
+                    "description": "Limits the result to the top N rows based on sorting.",
+                    "type": "integer"
+                }
+            },
+            "required": ["level"]
+        }
+    },
+    {
+        "name": "get_cil_tas",
+        "description": "Queries global temperature and sea-level projection datasets to analyze climate trends and impacts. Supports filtering by regions, year ranges, SSP scenarios, percentiles, and more. Allows grouping, aggregation, and sorting for advanced data analysis.",
+        "parameters": {
+            "properties": {
+                "level": {
+                    "description": "Dataset level indicating the global level or USA country-level data subset to use. Options are: 'global' for Global data or 'usa' for USA state-level data.",
+                    "type": "string"
+                },
+                "flag": {
+                    "description": "Dataset flag indicating the data subset to use. Options are: 'jja' (summer data), 'djf' (winter data), 'u32' (days below 32°F), 'o95' (days above 95°F), or None (annual data).",
+                    "type": "string"
+                },
+                "names": {
+                    "description": "List of countries or states of USA to filter data.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "years_range": {
+                    "description": "List of year ranges (e.g., '2040-2059') to filter the data. Available ranges are: '1986-2005', '2020-2039', '2040-2059', '2080-2099'.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ssp_range": {
+                    "description": "List of SSP (Shared Socioeconomic Pathways) ranges to filter data by SSP scenarios. Available options are: 'SSP2-4.5', 'SSP3-7.0', 'SSP5-8.5'.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "percentiles": {
+                    "description": "List of percentiles to include in the output. Options are: 0.05 (5th percentile), 0.50 (Median), 0.95 (95th percentile).",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "group_by": {
+                    "description": "Column name(s) to group the data by (e.g., 'name', 'ssp_range'). Available options are: 'name', 'ssp_range', 'year_range'.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "aggregate": {
+                    "description": "Aggregation method to apply when grouping data. Options include: 'mean', 'median', 'var', 'sem', 'min', 'max'.",
+                    "type": "string"
+                },
+                "sort": {
+                    "description": "Sorting order for the output data. Options are: 'ascending' or 'descending' (default: 'descending').",
+                    "type": "string"
+                },
+                "n": {
+                    "description": "Number of top records to return after filtering and sorting. 0 indicates return all.",
+                    "type": "integer"
+                }
+            },
+            "required": ["level"],
+             "type": "object"
+        }
+    },
+    {
         "name": "get_average_fuel_emission_data",
         "description": "Retrieve the average emission value or trend for a specified fuel type across all years or a defined period for a given country. Use this for queries mentioning 'fuel' or specific fuel types like 'Solid Fuel', 'Liquid Fuel', 'Gas Fuel', 'Cement', or 'Gas Flaring'.",
         "parameters": {
@@ -415,7 +561,7 @@ def get_tool_declaration():
             },
             "required": ["country", "fuel_type"]
         }
-    }
+    },
     {
         "name": "get_climate_policy_analysis",
         "description": "Analyze climate policy data, including overall ratings, policy effectiveness, and net-zero target assessments.",
@@ -436,7 +582,7 @@ def get_tool_declaration():
                 }
             }
         }
-    }
+    },
     {
         "name": "get_extreme_weather_analysis",
         "description": "Analyze extreme weather events, including heatwaves, floods, and hurricanes. Supports filtering by region, event type, and date range.",
@@ -449,7 +595,7 @@ def get_tool_declaration():
                 "end_date": {"description": "The end date for analysis ('YYYY-MM-DD').", "type": "string"}
             }
         }
-    }
+    },
     {
         "name": "get_climate_risk_profile",
         "description": "Provides a detailed climate risk profile for a specified country, including temperature and precipitation trends.",
@@ -463,7 +609,7 @@ def get_tool_declaration():
             },
             "required": ["country"]
         }
-    }
+    },
     {
         "name": "get_global_carbon_emissions",
         "description": "Provides detailed analysis of global carbon emissions data, supporting filters by country, sector, year, and emission type.",
@@ -476,7 +622,7 @@ def get_tool_declaration():
                 "emission_type": {"description": "The type of emission (e.g., 'CO2').", "type": "string"}
             }
         }
-    }
+    },
     {
         "name": "get_deforestation_data",
         "description": "Provides detailed analysis of deforestation data, including rates and forest area changes, supporting filters by country, forest type, and year range.",
@@ -489,7 +635,7 @@ def get_tool_declaration():
                 "end_year": {"description": "The ending year for analysis.", "type": "integer"}
             }
         }
-    }
+    },
     {
         "name": "get_energy_mix_data",
         "description": "Provides detailed analysis of energy mix data, including the share of different energy sources, supporting filters by country, energy source, and year range.",
@@ -502,7 +648,7 @@ def get_tool_declaration():
                 "end_year": {"description": "The ending year for analysis.", "type": "integer"}
             }
         }
-    }
+    },
     {
         "name": "get_climate_policy_data",
         "description": "Provides detailed analysis of national climate policies, supporting filters by country, policy type, and specific components.",
@@ -514,7 +660,7 @@ def get_tool_declaration():
                 "component": {"description": "The specific component of the policy to query (e.g., 'Targets').", "type": "string"}
             }
         }
-    }
+    },
     {
         "name": "get_emission_monitoring_data",
         "description": "Provides detailed monitoring of greenhouse gas emissions, supporting filters by country, sector, emission type, and year range.",
