@@ -122,10 +122,10 @@ class CIL_TAS_Tool(SingleMessageCustomTool):
             "n": ToolParamDefinitionParam(
                 type="int",
                 description="Number of top records to return after filtering and sorting. 0 indicates return all.",
-                required=True
+                required=False
             ),
         }
-
+    
     async def run_impl(
         self,
         level = str,
